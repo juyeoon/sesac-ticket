@@ -5,11 +5,6 @@
 
 [구현할 것]
 - create_app() -> FastAPI
-    FastAPI 인스턴스 생성. ProxyHeadersMiddleware 등록(ALB 2단 구성이라 필수).
-    app.core.lifespan.lifespan을 lifespan 인자로 연결.
-    app.api.v1.router를 prefix="/api/v1"로 include.
-    app.core.handlers.register_exception_handlers(app) 호출.
-    app.core.logging.setup_logging() 호출.
 
 [의존]
 - app.core.config
@@ -24,10 +19,29 @@
 [주의]
 - ALB가 alb-pub → nginx → alb-int → gunicorn 순으로 2단 구성됨.
   X-Forwarded-* 헤더가 두 단계를 거치므로 ProxyHeadersMiddleware의
-  trusted_hosts 범위를 nginx 쪽 내부 IP로 한정할 것.
-
-[TODO] 구현 필요
+  trusted_hosts 범위를 nginx 쪽 내부 IP로 한정할 것 (settings.trusted_proxy_hosts).
 """
 
-def create_app():
-    pass
+from fastapi import FastAPI
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+
+from app.api.v1 import router as v1_router
+from app.core.config import get_settings
+from app.core.handlers import register_exception_handlers
+from app.core.lifespan import lifespan
+from app.core.logging import setup_logging
+
+
+def create_app() -> FastAPI:
+    setup_logging()
+    settings = get_settings()
+
+    app = FastAPI(title="sesac-ticket-api", lifespan=lifespan)
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=settings.trusted_proxy_hosts)
+    register_exception_handlers(app)
+    app.include_router(v1_router, prefix="/api/v1")
+
+    return app
+
+
+app = create_app()

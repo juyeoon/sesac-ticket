@@ -4,12 +4,9 @@
 [역할] 예외를 JSON 응답으로 변환. FE가 받는 에러 응답 형태를 결정하는 유일한 지점.
 
 [구현할 것]
-- app_exception_handler(request, exc: AppException) -> JSONResponse
-    { "errorCode": exc.error_code, "message": exc.message } 형태로 변환.
-- validation_exception_handler(request, exc: RequestValidationError) -> JSONResponse
-    FastAPI 자체 검증 에러를 동일 규격으로 변환.
-- register_exception_handlers(app: FastAPI) -> None
-    위 두 핸들러를 app에 등록.
+- app_exception_handler(request, exc) -> JSONResponse
+- validation_exception_handler(request, exc) -> JSONResponse
+- register_exception_handlers(app) -> None
 
 [의존]
 - app.core.exceptions (AppException, ErrorCode)
@@ -20,17 +17,34 @@
 [주의]
 - 응답 규격은 이 파일에서만 결정한다. 두 벌의 에러 응답 형태가 생기면 FE가
   분기 처리를 해야 하므로 반드시 단일화.
-
-[TODO] 구현 필요
 """
 
-def app_exception_handler(request, exc):
-    pass
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+from app.core.exceptions import AppException, ErrorCode
 
 
-def validation_exception_handler(request, exc):
-    pass
+async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"errorCode": exc.error_code.value, "message": exc.message},
+    )
 
 
-def register_exception_handlers(app):
-    pass
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content={
+            "errorCode": ErrorCode.COMMON_VALIDATION_FAILED.value,
+            "message": str(exc.errors()),
+        },
+    )
+
+
+def register_exception_handlers(app: FastAPI) -> None:
+    app.add_exception_handler(AppException, app_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
