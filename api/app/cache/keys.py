@@ -7,6 +7,7 @@
 - refresh_token(member_id) -> str      A: refresh 토큰 저장
 - entry_ticket(ticket_id) -> str       A: 대기열 입장 티켓
 - queue(schedule_id) -> str            A: 대기열 Sorted Set
+- queue_ready(schedule_id, member_id) -> str  A: 방출된 회원의 READY 상태+티켓 저장
 - seat_status(schedule_id) -> str      B: 좌석 상태 캐시
 - hold(hold_id) -> str                 B: 선점 정보
 - worker_lock(name) -> str             공통: 워커 리더 선출 락
@@ -35,6 +36,10 @@ def entry_ticket(ticket_id: str) -> str:
 
 def queue(schedule_id: int) -> str:
     return f"queue:sorted:{schedule_id}"
+
+
+def queue_ready(schedule_id: int, member_id: int) -> str:
+    return f"queue:ready:{schedule_id}:{member_id}"
 
 
 def seat_status(schedule_id: int) -> str:
