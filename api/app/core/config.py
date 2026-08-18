@@ -4,34 +4,11 @@
 [역할] .env를 읽어 Settings 객체로 노출. DB/Valkey/JWT/예매/대기열 설정값 일원화.
 
 [구현할 것]
-- class Settings(BaseSettings)
-    # DB
-    - DB_WRITER_URL: str
-    - DB_READER_URL: str
-    - DB_POOL_SIZE: int
-    - DB_POOL_RECYCLE: int = 3600
-    # Valkey
-    - VALKEY_MASTER_HOST: str
-    - VALKEY_MASTER_PORT: int
-    - VALKEY_REPLICA_HOST: str
-    - VALKEY_REPLICA_PORT: int
-    # JWT
-    - JWT_SECRET: str
-    - JWT_ACCESS_EXPIRE_MIN: int
-    - JWT_REFRESH_EXPIRE_DAYS: int
-    # 예매
-    - HOLD_TTL_SEC: int
-    # 대기열
-    - QUEUE_ENABLED: bool
-    - QUEUE_DISPATCH_BATCH_SIZE: int
-    - QUEUE_POLL_INTERVAL_SEC: int
-    # 인스턴스
-    - INSTANCE_ID: str
-- get_settings() -> Settings
-    캐시된 Settings 싱글턴 반환 (lru_cache 등)
+- class Settings(BaseSettings): DB/Valkey/JWT/예매/대기열/인스턴스 필드
+- get_settings() -> Settings: lru_cache로 싱글턴 반환
 
 [의존]
-- 없음 (pydantic-settings만 표준 의존)
+- pydantic-settings
 
 [호출자]
 - 거의 모든 모듈 (writer/reader 접속, JWT, 캐시, 대기열 게이트 등)
@@ -42,13 +19,48 @@
   반드시 존재해야 함.
 - 필드 추가 시 팀 전체의 로컬 .env.example도 함께 갱신할 것. 임의로 늘리면
   서로의 로컬 환경이 깨짐.
-
-[TODO] 구현 필요
 """
 
-class Settings:
-    pass
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def get_settings():
-    pass
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    # --- DB ---
+    db_writer_url: str
+    db_reader_url: str
+    db_pool_size: int = 5
+    db_pool_recycle: int = 3600
+
+    # --- Valkey ---
+    valkey_master_host: str
+    valkey_master_port: int = 6379
+    valkey_replica_host: str
+    valkey_replica_port: int = 6379
+
+    # --- JWT ---
+    jwt_secret: str
+    jwt_access_expire_min: int = 30
+    jwt_refresh_expire_days: int = 14
+
+    # --- 예매 ---
+    hold_ttl_sec: int = 300
+
+    # --- 대기열 ---
+    queue_enabled: bool = True
+    queue_dispatch_batch_size: int = 50
+    queue_poll_interval_sec: int = 3
+
+    # --- 인프라 ---
+    trusted_proxy_hosts: str = "*"  # ALB 2단 구성. 운영에서는 nginx 내부 IP 대역으로 한정할 것
+
+    # --- 인스턴스 ---
+    instance_id: str = "api-local"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

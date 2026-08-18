@@ -5,9 +5,7 @@
 
 [구현할 것]
 - setup_logging() -> None
-    JSON 포맷 핸들러 설정. 각 로그 레코드에 instance_id 필드 삽입.
-- get_logger(name: str) -> Logger
-    모듈별 로거 반환.
+- get_logger(name) -> Logger
 
 [의존]
 - app.core.config (INSTANCE_ID)
@@ -20,13 +18,38 @@
 [주의]
 - api 인스턴스가 2대(api-a / api-c) 운영되므로 instance_id 없이는 로그가
   어느 인스턴스에서 발생했는지 구분 불가. 장애 추적의 최소 조건.
-
-[TODO] 구현 필요
 """
 
-def setup_logging():
-    pass
+import json
+import logging
+import sys
+
+from app.core.config import get_settings
 
 
-def get_logger(name):
-    pass
+class _JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        settings = get_settings()
+        payload = {
+            "timestamp": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "instance_id": settings.instance_id,
+        }
+        if record.exc_info:
+            payload["exc_info"] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False)
+
+
+def setup_logging() -> None:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(_JsonFormatter())
+
+    root = logging.getLogger()
+    root.handlers = [handler]
+    root.setLevel(logging.INFO)
+
+
+def get_logger(name: str) -> logging.Logger:
+    return logging.getLogger(name)

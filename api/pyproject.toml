@@ -1,24 +1,33 @@
-# [모듈] api/pyproject.toml
-# [담당] 공통
-# [역할] 프로젝트 의존성 및 빌드 설정 정의.
-# [TODO] 구현 필요
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
 
-# --- 의존성 추가는 반드시 담당자 A를 통해서만 진행할 것 (락파일 충돌 방지) ---
+[project]
+name = "sesac-ticket-api"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "gunicorn>=22.0",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "pymysql>=1.1",
+    "redis>=5.0",
+    "pydantic-settings>=2.2",
+    "pyjwt>=2.8",
+    "bcrypt>=4.1",
+]
 
-# [project]
-# name: 패키지명 (sesac-ticket-api)
-# version: 버전
-# dependencies:
-#   - fastapi            # 웹 프레임워크
-#   - uvicorn             # ASGI 서버 (개발용)
-#   - gunicorn            # WSGI/ASGI 프로세스 매니저 (운영용)
-#   - sqlalchemy          # ORM, writer/reader 엔진 2세트
-#   - alembic             # 마이그레이션
-#   - pymysql 또는 mysqlclient  # MySQL 드라이버
-#   - redis               # Valkey(Redis 호환) 클라이언트
-#   - pydantic-settings   # .env 기반 Settings
-#   - python-jose 또는 pyjwt   # JWT 발급/검증
-#   - passlib[bcrypt]     # 비밀번호 해싱
-#
-# [tool.pytest]
-# 테스트 경로: tests/
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
