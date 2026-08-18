@@ -1,0 +1,12 @@
+# [모듈] api/deploy/systemd/sesac-api.service
+# [담당] 공통
+# [역할] gunicorn API 프로세스를 systemd로 상시 구동하기 위한 유닛 파일.
+# [구현할 것]
+#   - [Unit] Description, After=network.target
+#   - [Service] ExecStart=gunicorn -c gunicorn.conf.py app.main:app,
+#     User, WorkingDirectory, Restart=always, EnvironmentFile(.env 경로)
+#   - [Install] WantedBy=multi-user.target
+# [의존] api/gunicorn.conf.py, api/.env
+# [호출자] deploy/deploy.sh (systemctl restart sesac-api)
+# [주의] api 인스턴스 2대(api-a/api-c) 각각에 동일 유닛을 배치. INSTANCE_ID만 다르게.
+# [TODO] 구현 필요

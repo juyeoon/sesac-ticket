@@ -1,0 +1,13 @@
+# [모듈] api/deploy/systemd/sesac-sweeper.service
+# [담당] 공통
+# [역할] app.workers.hold_sweeper(B 담당)를 상시 구동하는 systemd 유닛.
+# [구현할 것]
+#   - [Unit] Description, After=network.target
+#   - [Service] ExecStart=python -m app.workers.hold_sweeper,
+#     Restart=always, EnvironmentFile(.env 경로)
+#   - [Install] WantedBy=multi-user.target
+# [의존] api/app/workers/hold_sweeper.py
+# [호출자] deploy/deploy.sh
+# [주의] api 인스턴스 2대에서 동시에 돌아도 app.workers.base의 분산 락으로
+#   한쪽만 실제 작업을 수행해야 함. 두 인스턴스 모두 이 유닛을 켜둘 것.
+# [TODO] 구현 필요

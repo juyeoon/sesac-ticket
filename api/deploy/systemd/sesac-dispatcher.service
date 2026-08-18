@@ -1,0 +1,13 @@
+# [모듈] api/deploy/systemd/sesac-dispatcher.service
+# [담당] 공통
+# [역할] app.workers.queue_dispatcher(A 담당)를 상시 구동하는 systemd 유닛.
+# [구현할 것]
+#   - [Unit] Description, After=network.target
+#   - [Service] ExecStart=python -m app.workers.queue_dispatcher,
+#     Restart=always, EnvironmentFile(.env 경로)
+#   - [Install] WantedBy=multi-user.target
+# [의존] api/app/workers/queue_dispatcher.py
+# [호출자] deploy/deploy.sh
+# [주의] sesac-sweeper.service와 동일하게 분산 락 기반 리더 선출을 사용하므로
+#   두 인스턴스 모두에 배치해도 안전함.
+# [TODO] 구현 필요
