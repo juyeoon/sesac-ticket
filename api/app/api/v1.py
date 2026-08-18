@@ -23,16 +23,14 @@ from fastapi import APIRouter
 router = APIRouter()
 
 # --- A 구역 (아래에만 추가) ---
-from app.domains.admin.router import router as admin_router
-from app.domains.auth.router import router as auth_router
-from app.domains.system.router import router as system_router
-
+# from app.domains.auth.router import router as auth_router
+# from app.domains.admin.router import router as admin_router
 # from app.domains.queue.router import router as queue_router
-
-router.include_router(admin_router)
-router.include_router(auth_router)
-router.include_router(system_router)
+# from app.domains.system.router import router as system_router
+# router.include_router(admin_router)
+# router.include_router(auth_router)
 # router.include_router(queue_router)
+# router.include_router(system_router)
 
 # --- B 구역 (아래에만 추가) ---
 # from app.domains.performance.router import router as performance_router
