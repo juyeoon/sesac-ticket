@@ -4,7 +4,8 @@
 [역할] Valkey 키 문자열을 함수로 캡슐화. A/B가 공유하는 유일한 캐시 키 정의 파일.
 
 [구현할 것]
-- refresh_token(member_id) -> str      A: refresh 토큰 저장
+- refresh_token(member_id) -> str      A: 회원 refresh 토큰 저장
+- admin_refresh_token(admin_id) -> str A: 관리자 refresh 토큰 저장 (회원과 완전 분리)
 - password_reset_token(token) -> str   A: 비밀번호 재설정 토큰 -> member_id
 - email_verification_code(email) -> str        A: 이메일 인증 코드
 - email_verification_cooldown(email) -> str    A: 이메일 인증 재요청 쿨다운
@@ -32,6 +33,10 @@
 
 def refresh_token(member_id: int) -> str:
     return f"auth:refresh:{member_id}"
+
+
+def admin_refresh_token(admin_id: int) -> str:
+    return f"admin:refresh:{admin_id}"
 
 
 def password_reset_token(token: str) -> str:
