@@ -11,6 +11,12 @@
 - fakeredis (Valkey 대체)
 - app.db.base, app.db.session, app.main
 
+[주의로 추가]
+- performance/performance_image/member_favorite는 아직 SQLAlchemy ORM 모델이
+  없다(B 담당, raw SQL 우선). Base.metadata.create_all()로는 안 만들어지므로
+  이 파일에서 SQLite 호환 DDL로 직접 생성한다. 운영에서는
+  api/scripts/sql/sesac_ticket_init.sql이 이 테이블들을 만든다.
+
 [호출자]
 - tests/test_auth.py, tests/test_queue.py
 
@@ -35,6 +41,7 @@ os.environ.setdefault("DB_READER_URL", f"sqlite:///{_TEST_DB_PATH}")
 os.environ.setdefault("VALKEY_MASTER_HOST", "localhost")
 os.environ.setdefault("VALKEY_REPLICA_HOST", "localhost")
 os.environ.setdefault("JWT_SECRET", "test-secret-please-override-32bytes-long")
+os.environ.setdefault("COOKIE_SECURE", "false")  # TestClient는 http라 Secure 쿠키가 전송 안 됨
 
 import fakeredis
 import redis
@@ -43,15 +50,52 @@ redis.Redis = fakeredis.FakeRedis
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
 from app.db.base import Base
 from app.db.session import WriterSessionLocal, writer_engine
 from app.main import create_app
 
+# performance/performance_image/member_favorite: B의 ORM 모델이 아직 없어
+# raw SQL로 직접 생성한다 (테스트 전용, 운영 스키마는 init.sql이 담당).
+_EXTRA_TABLES_DDL = """
+CREATE TABLE IF NOT EXISTS performance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    category_id INTEGER,
+    description TEXT,
+    venue_id INTEGER,
+    ticket_open_at DATETIME,
+    ticket_close_at DATETIME,
+    running_time_min INTEGER,
+    age_limit TEXT,
+    status TEXT,
+    created_at DATETIME,
+    updated_at DATETIME
+);
+CREATE TABLE IF NOT EXISTS performance_image (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    performance_id INTEGER NOT NULL,
+    file_key TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS member_favorite (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    member_id INTEGER NOT NULL,
+    performance_id INTEGER NOT NULL,
+    created_at DATETIME
+);
+"""
+
 
 @pytest.fixture(scope="session", autouse=True)
 def _create_schema():
     Base.metadata.create_all(bind=writer_engine)
+    with writer_engine.begin() as conn:
+        for statement in _EXTRA_TABLES_DDL.strip().split(";"):
+            statement = statement.strip()
+            if statement:
+                conn.execute(text(statement))
     yield
     Base.metadata.drop_all(bind=writer_engine)
     writer_engine.dispose()
