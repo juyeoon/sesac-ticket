@@ -64,6 +64,13 @@ class Settings(BaseSettings):
     trusted_proxy_hosts: str = "*"  # ALB 2단 구성. 운영에서는 nginx 내부 IP 대역으로 한정할 것
     cookie_secure: bool = True  # refreshToken 쿠키 Secure 플래그. 로컬 http 개발 시 false
 
+    # --- 앱/API 버전 (SYS-003) ---
+    api_version: str = "1.0.0"
+    app_latest_version: str = "1.0.0"
+    app_min_required_version: str = "1.0.0"
+    app_force_update: bool = False
+    app_update_url: str = ""
+
     # --- 인스턴스 ---
     instance_id: str = "api-local"
 

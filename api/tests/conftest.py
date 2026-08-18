@@ -99,8 +99,11 @@ def _create_schema():
     yield
     Base.metadata.drop_all(bind=writer_engine)
     writer_engine.dispose()
-    if _TEST_DB_PATH.exists():
-        _TEST_DB_PATH.unlink()
+    try:
+        if _TEST_DB_PATH.exists():
+            _TEST_DB_PATH.unlink()
+    except PermissionError:
+        pass  # Windows에서 sqlite 파일 핸들이 늦게 풀리는 경우가 있음. 다음 실행 시 정리됨.
 
 
 @pytest.fixture
