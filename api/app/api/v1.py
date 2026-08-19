@@ -27,12 +27,14 @@ from app.domains.admin.router import router as admin_router
 from app.domains.auth.router import router as auth_router
 from app.domains.member.router import router as member_router
 from app.domains.queue.router import router as queue_router
+from app.domains.support.router import router as support_router
 from app.domains.system.router import router as system_router
 
 router.include_router(admin_router)
 router.include_router(auth_router)
 router.include_router(member_router)
 router.include_router(queue_router)
+router.include_router(support_router)
 router.include_router(system_router)
 
 # --- B 구역 (아래에만 추가) ---
