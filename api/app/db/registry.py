@@ -28,6 +28,18 @@ from app.domains.member.model import Member, MemberFavorite  # noqa: F401
 from app.domains.admin.model import Admin  # noqa: F401
 
 # --- B 담당 영역 (아래에만 추가) ---
-# from app.domains.venue.model import Venue, VenueSeat
-# from app.domains.performance.model import Performance
-# from app.domains.reservation.model import Reservation
+from app.domains.venue.model import Venue, VenueSeat  # noqa: F401
+from app.domains.performance.model import (  # noqa: F401
+    Category,
+    Performance,
+    PerformanceImage,
+    PerformanceSeatGrade,
+    Schedule,
+)
+from app.domains.reservation.model import (  # noqa: F401
+    Reservation,
+    ReservationSeat,
+    ScheduleSeat,
+    SeatHoldLog,
+)
+from app.domains.payment.model import BankTransferPayment  # noqa: F401
