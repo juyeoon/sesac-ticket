@@ -1,8 +1,11 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { RootLayout } from '../components/layout/RootLayout'
 import NotFoundPage from '../pages/NotFoundPage'
 import FailoverPage from '../pages/FailoverPage'
 import ComingSoonPage from '../pages/ComingSoonPage'
+import LoginPage from '../pages/auth/LoginPage'
+import SignupPage from '../pages/auth/SignupPage'
+import PasswordResetPage from '../pages/auth/PasswordResetPage'
 
 /**
  * 전체 라우트 표. 아직 만들지 않은 화면은 ComingSoonPage로 채워두고,
@@ -21,13 +24,11 @@ export function AppRoutes() {
         />
 
         {/* Phase 1 — 인증 */}
-        <Route path="/login" element={<ComingSoonPage title="로그인" />} />
-        <Route path="/signup" element={<ComingSoonPage title="회원가입" />} />
-        <Route
-          path="/password/reset-request"
-          element={<ComingSoonPage title="비밀번호 재설정 요청" />}
-        />
-        <Route path="/password/reset" element={<ComingSoonPage title="비밀번호 재설정" />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        {/* figma 와이어프레임이 요청(이메일 인증)과 재설정을 한 화면으로 합쳐놨어서 하나로 통일 */}
+        <Route path="/password/reset" element={<PasswordResetPage />} />
+        <Route path="/password/reset-request" element={<Navigate to="/password/reset" replace />} />
 
         {/* Phase 3 — 예매 / 대기열 */}
         <Route path="/queue/:queueToken" element={<ComingSoonPage title="대기열" />} />

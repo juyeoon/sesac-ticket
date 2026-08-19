@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 interface LoginRequiredModalProps {
   open: boolean
@@ -9,6 +9,7 @@ interface LoginRequiredModalProps {
 /** docs/design-system.md 8장 규칙: 버튼 비활성화 대신 모달로 로그인 유도. */
 export function LoginRequiredModal({ open, onClose }: LoginRequiredModalProps) {
   const navigate = useNavigate()
+  const location = useLocation()
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -26,7 +27,7 @@ export function LoginRequiredModal({ open, onClose }: LoginRequiredModalProps) {
           variant="contained"
           onClick={() => {
             onClose()
-            navigate('/login')
+            navigate('/login', { state: { from: location } })
           }}
         >
           로그인하러 가기

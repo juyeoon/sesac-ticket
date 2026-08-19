@@ -78,10 +78,10 @@ export const authHandlers = [
     if (!findUserByEmail(email)) {
       return HttpResponse.json({ sent: true }) // 이메일 존재 여부 노출 방지
     }
-    const token = issueMockToken('reset', findUserByEmail(email)!.id)
-    db.passwordResetTokens.set(token, email)
+    const code = randomCode()
+    db.passwordResetTokens.set(code, email)
     // eslint-disable-next-line no-console
-    console.info(`[mock] ${email} 재설정 토큰: ${token}`)
+    console.info(`[mock] ${email} 비밀번호 재설정 인증번호: ${code}`)
     return HttpResponse.json({ sent: true })
   }),
 
