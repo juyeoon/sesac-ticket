@@ -60,6 +60,15 @@ class Settings(BaseSettings):
     email_verification_ttl_sec: int = 600  # 인증 코드 유효시간 10분
     email_verification_cooldown_sec: int = 60  # 재요청 쿨다운(429 방지 최소 구현)
 
+    # --- 이메일 발송 (SMTP) ---
+    smtp_host: str = ""  # 비어있으면 실제 발송 없이 로그만 남김 (로컬/테스트 기본값)
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_use_tls: bool = True
+    smtp_from_email: str = "no-reply@sesac-ticket.local"
+    smtp_from_name: str = "새싹티켓"
+
     # --- 인프라 ---
     trusted_proxy_hosts: str = "*"  # ALB 2단 구성. 운영에서는 nginx 내부 IP 대역으로 한정할 것
     cookie_secure: bool = True  # refreshToken 쿠키 Secure 플래그. 로컬 http 개발 시 false
