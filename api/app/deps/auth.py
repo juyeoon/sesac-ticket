@@ -4,8 +4,8 @@
 [역할] Authorization 헤더의 access 토큰을 검증해 현재 로그인한 회원/관리자를 조회.
 
 [구현할 것]
-- get_current_member(authorization, db) -> Member
-- get_current_admin(authorization, db) -> Admin
+- get_current_member(credentials, db) -> Member
+- get_current_admin(credentials, db) -> Admin
 
 [의존]
 - app.core.security (decode_token)
@@ -20,7 +20,8 @@
 - 탈퇴(status=WITHDRAWN)한 회원은 access 토큰이 아직 만료 전이어도 접근을 거부한다.
 """
 
-from fastapi import Depends, Header
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import AppException, ErrorCode
@@ -31,23 +32,24 @@ from app.domains.admin.model import Admin
 from app.domains.member import repository as member_repository
 from app.domains.member.model import Member
 
+_bearer_scheme = HTTPBearer(auto_error=False)
 
-def _decode_access_token(authorization: str | None) -> dict:
-    if not authorization or not authorization.startswith("Bearer "):
+
+def _decode_access_token(credentials: HTTPAuthorizationCredentials | None) -> dict:
+    if credentials is None or credentials.scheme.lower() != "bearer":
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)
 
-    token = authorization.removeprefix("Bearer ").strip()
-    payload = decode_token(token)
+    payload = decode_token(credentials.credentials)
     if payload is None or payload.get("type") != "access":
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)
     return payload
 
 
 def get_current_member(
-    authorization: str | None = Header(default=None),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
     db: Session = Depends(get_db),
 ) -> Member:
-    payload = _decode_access_token(authorization)
+    payload = _decode_access_token(credentials)
     member = member_repository.get_member_by_id(db, int(payload["sub"]))
     if member is None:
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)
@@ -57,10 +59,10 @@ def get_current_member(
 
 
 def get_current_admin(
-    authorization: str | None = Header(default=None),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
     db: Session = Depends(get_db),
 ) -> Admin:
-    payload = _decode_access_token(authorization)
+    payload = _decode_access_token(credentials)
     admin = admin_repository.get_admin_by_id(db, int(payload["sub"]))
     if admin is None:
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)
