@@ -12,6 +12,7 @@
 - ReservationPerformanceSummary ({ performanceId, title })
 - ReservationScheduleSummary ({ scheduleId, date, time })
 - ReservationDetailResponse — RESV-006 응답
+- MyReservationItem / MyReservationListResponse ({ content, totalElements }) — RESV-007
 
 [의존]
 - pydantic
@@ -87,3 +88,15 @@ class ReservationDetailResponse(_CamelModel):
     bank_account_info: str
     payment_due_at: datetime | None
     confirmed_at: datetime | None
+
+
+class MyReservationItem(_CamelModel):
+    reservation_id: int
+    performance_title: str
+    date: date_
+    status: str
+
+
+class MyReservationListResponse(_CamelModel):
+    content: list[MyReservationItem]
+    total_elements: int

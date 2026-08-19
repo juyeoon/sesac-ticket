@@ -1,7 +1,8 @@
 """
 [모듈] api/app/domains/reservation/service.py
 [담당] B (인계받아 A가 구현 진행 — 2026-08-19)
-[역할] 좌석 상태 조회(RESV-002) + 무통장입금 예매 생성/확정/조회(RESV-004~006).
+[역할] 좌석 상태 조회(RESV-002) + 무통장입금 예매 생성/확정/조회(RESV-004~006)
+       + 내 예매 목록(RESV-007).
 
 [구현할 것]
 - get_seat_status_list(db, schedule_id) -> list[SeatStatusItem]
@@ -10,6 +11,8 @@
 - create_reservation(db, *, member_id, hold_id, depositor_name) -> CreateReservationResponse
 - confirm_reservation(db, *, reservation_id, admin_id) -> ConfirmReservationResponse
 - get_reservation_detail(db, *, reservation_id, member_id) -> ReservationDetailResponse
+- list_my_reservations(db, *, member_id, page, size, status=None) -> MyReservationListResponse
+    반드시 writer 세션으로 호출 (복제 지연 문제 방지, 분담표 원칙).
 
 [의존]
 - app.cache.client (get_master_client)
@@ -50,6 +53,8 @@ from app.domains.reservation import repository
 from app.domains.reservation.schema import (
     ConfirmReservationResponse,
     CreateReservationResponse,
+    MyReservationItem,
+    MyReservationListResponse,
     ReservationDetailResponse,
     ReservationPerformanceSummary,
     ReservationScheduleSummary,
@@ -188,4 +193,16 @@ def get_reservation_detail(
         bank_account_info=payment.bank_account_info if payment else "",
         payment_due_at=payment.payment_due_at if payment else None,
         confirmed_at=reservation.confirmed_at,
+    )
+
+
+def list_my_reservations(
+    db: Session, *, member_id: int, page: int, size: int, status: str | None = None
+) -> MyReservationListResponse:
+    items, total = repository.list_reservations_by_member(
+        db, member_id, page=page, size=size, status=status
+    )
+    return MyReservationListResponse(
+        content=[MyReservationItem(**item) for item in items],
+        total_elements=total,
     )
