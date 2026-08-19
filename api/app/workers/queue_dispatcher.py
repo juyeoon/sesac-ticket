@@ -11,6 +11,8 @@
 - app.cache.client, app.cache.keys
 - app.core.config (QUEUE_DISPATCH_BATCH_SIZE, QUEUE_POLL_INTERVAL_SEC)
 - app.workers.base (리더 선출)
+- app.db.session (ReaderSessionLocal) — 활성 회차 목록 조회용
+- app.domains.performance.model (Schedule)
 
 [호출자]
 - systemd (sesac-dispatcher.service)
@@ -19,9 +21,9 @@
 - workers.base는 B 담당 모듈. Day3 오전에 B가 완성해서 넘겨주는 게 원칙이나, B 작업
   착수 전이라 A가 임시 구현한 버전을 그대로 사용 중이다. 리더 선출 코드를 여기서
   다시 구현하지 말 것.
-- 활성 회차(schedule) 목록 조회는 B의 performance/schedule 도메인이 준비되어야
-  가능하다. 그 전까지 _dispatch_all_schedules는 자리표시자이며, dispatch_once만
-  단위로 테스트 가능하다.
+- 활성 회차(schedule) 목록은 Schedule.status == "OPEN"인 것 전체를 매 틱마다
+  reader로 조회한다. 복제 지연으로 방금 CLOSED된 회차가 한두 틱 더 잡혀도
+  dispatch_once가 좌석 재고를 바꾸는 건 아니라서 무해하다.
 - ZPOPMIN으로 꺼낸 각 queueToken의 실제 member_id는 queue:token:{token} 매핑에서
   읽는다. 매핑이 이미 만료(TTL 종료)됐다면 해당 항목은 건너뛴다.
 """
@@ -29,12 +31,16 @@
 import logging
 import uuid
 
+from sqlalchemy import select
+
 from app.cache.client import get_master_client
 from app.cache.keys import entry_ticket as entry_ticket_key
 from app.cache.keys import queue as queue_key
 from app.cache.keys import queue_ready as queue_ready_key
 from app.cache.keys import queue_token as queue_token_key
 from app.core.config import get_settings
+from app.db.session import ReaderSessionLocal
+from app.domains.performance.model import Schedule
 from app.workers.base import run_as_leader
 
 logger = logging.getLogger(__name__)
@@ -64,10 +70,27 @@ def dispatch_once(performance_id: int, schedule_id: int) -> int:
     return dispatched
 
 
+def _fetch_active_schedule_ids() -> list[tuple[int, int]]:
+    db = ReaderSessionLocal()
+    try:
+        rows = db.execute(
+            select(Schedule.performance_id, Schedule.id).where(Schedule.status == "OPEN")
+        ).all()
+        return [(row.performance_id, row.id) for row in rows]
+    finally:
+        db.close()
+
+
 def _dispatch_all_schedules() -> None:
-    # TODO: B의 performance/schedule 도메인이 준비되면 활성 (performance_id, schedule_id)
-    # 목록을 조회해 각각에 대해 dispatch_once를 호출하도록 교체한다.
-    logger.debug("queue dispatcher tick (no active schedule source wired yet)")
+    for performance_id, schedule_id in _fetch_active_schedule_ids():
+        dispatched = dispatch_once(performance_id, schedule_id)
+        if dispatched:
+            logger.info(
+                "dispatched %d entries: performance=%s schedule=%s",
+                dispatched,
+                performance_id,
+                schedule_id,
+            )
 
 
 def run() -> None:
