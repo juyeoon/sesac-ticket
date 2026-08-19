@@ -37,10 +37,9 @@ router.include_router(system_router)
 
 # --- B 구역 (아래에만 추가) ---
 from app.domains.performance.router import router as performance_router
+from app.domains.reservation.router import router as reservation_router
 from app.domains.venue.router import router as venue_router
 
-# from app.domains.reservation.router import router as reservation_router
-
 router.include_router(performance_router)
+router.include_router(reservation_router)
 router.include_router(venue_router)
-# router.include_router(reservation_router)

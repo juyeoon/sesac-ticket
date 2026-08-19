@@ -5,6 +5,10 @@
 
 [구현할 것]
 - SeatStatusItem ({ seatId, section, row, number, grade, status }) — RESV-002
+- HoldRequest ({ scheduleId, seatIds, entryTicket }) — RESV-003 요청
+- HoldResponse ({ holdId, seatIds, expiresAt }) — RESV-003 응답
+- ReleaseHoldResponse ({ holdId, released }) — RESV-012 응답
+- HoldDetailResponse ({ holdId, seatIds, expiresAt, remainingSeconds }) — RESV-013 응답
 - CreateReservationRequest ({ holdId, depositorName }) — RESV-004 요청
 - CreateReservationResponse ({ reservationId, status, paymentMethod, bankAccountInfo, paymentDueAt }) — RESV-004 응답
 - ConfirmReservationResponse ({ reservationId, status, confirmedAt }) — RESV-005 응답
@@ -38,6 +42,30 @@ class SeatStatusItem(_CamelModel):
     number: int
     grade: str
     status: str
+
+
+class HoldRequest(_CamelModel):
+    schedule_id: int
+    seat_ids: list[int]
+    entry_ticket: str | None = None
+
+
+class HoldResponse(_CamelModel):
+    hold_id: str
+    seat_ids: list[int]
+    expires_at: datetime
+
+
+class ReleaseHoldResponse(_CamelModel):
+    hold_id: str
+    released: bool = True
+
+
+class HoldDetailResponse(_CamelModel):
+    hold_id: str
+    seat_ids: list[int]
+    expires_at: datetime
+    remaining_seconds: int
 
 
 class CreateReservationRequest(_CamelModel):
