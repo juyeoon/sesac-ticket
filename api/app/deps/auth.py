@@ -17,6 +17,10 @@
 
 [주의]
 - access 토큰만 허용한다 (payload["type"] == "access"). refresh 토큰으로는 인증 불가.
+- payload["role"]이 "member"/"admin"인지도 반드시 같이 확인한다. member.id와
+  admin.id는 서로 다른 테이블의 독립적인 PK라 값이 겹칠 수 있어서, role 확인
+  없이 sub(id)만 보고 조회하면 member 토큰으로 admin API를 통과하는 권한
+  상승 버그가 된다.
 - 탈퇴(status=WITHDRAWN)한 회원은 access 토큰이 아직 만료 전이어도 접근을 거부한다.
 """
 
@@ -35,12 +39,18 @@ from app.domains.member.model import Member
 _bearer_scheme = HTTPBearer(auto_error=False)
 
 
-def _decode_access_token(credentials: HTTPAuthorizationCredentials | None) -> dict:
+def _decode_access_token(
+    credentials: HTTPAuthorizationCredentials | None, expected_role: str
+) -> dict:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)
 
     payload = decode_token(credentials.credentials)
-    if payload is None or payload.get("type") != "access":
+    if (
+        payload is None
+        or payload.get("type") != "access"
+        or payload.get("role") != expected_role
+    ):
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)
     return payload
 
@@ -49,7 +59,7 @@ def get_current_member(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
     db: Session = Depends(get_db),
 ) -> Member:
-    payload = _decode_access_token(credentials)
+    payload = _decode_access_token(credentials, expected_role="member")
     member = member_repository.get_member_by_id(db, int(payload["sub"]))
     if member is None:
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)
@@ -62,7 +72,7 @@ def get_current_admin(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
     db: Session = Depends(get_db),
 ) -> Admin:
-    payload = _decode_access_token(credentials)
+    payload = _decode_access_token(credentials, expected_role="admin")
     admin = admin_repository.get_admin_by_id(db, int(payload["sub"]))
     if admin is None:
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)

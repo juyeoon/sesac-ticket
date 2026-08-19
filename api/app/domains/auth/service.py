@@ -88,8 +88,8 @@ def login(db: Session, *, email: str, password: str) -> tuple[str, str, int]:
         raise AppException(ErrorCode.AUTH_MEMBER_WITHDRAWN)
 
     settings = get_settings()
-    access_token = create_access_token(member.id)
-    refresh_token = create_refresh_token(member.id)
+    access_token = create_access_token(member.id, role="member")
+    refresh_token = create_refresh_token(member.id, role="member")
     auth_repository.save_refresh_token(member.id, refresh_token)
     expires_in = settings.jwt_access_expire_min * 60
     return access_token, refresh_token, expires_in
@@ -100,7 +100,7 @@ def reissue_access_token(refresh_token: str | None) -> tuple[str, int]:
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)
 
     payload = decode_token(refresh_token)
-    if payload is None or payload.get("type") != "refresh":
+    if payload is None or payload.get("type") != "refresh" or payload.get("role") != "member":
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)
 
     member_id = int(payload["sub"])
@@ -109,7 +109,7 @@ def reissue_access_token(refresh_token: str | None) -> tuple[str, int]:
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)
 
     settings = get_settings()
-    access_token = create_access_token(member_id)
+    access_token = create_access_token(member_id, role="member")
     return access_token, settings.jwt_access_expire_min * 60
 
 
