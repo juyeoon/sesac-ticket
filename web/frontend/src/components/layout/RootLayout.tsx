@@ -68,7 +68,7 @@ export function RootLayout() {
   return (
     <Box sx={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="sticky">
-        <Toolbar sx={{ gap: { xs: 1, sm: 3 }, py: 1.5 }}>
+        <Toolbar sx={{ gap: { xs: 1, sm: 3 }, minHeight: 80, '@media (min-width: 600px)': { minHeight: 80 } }}>
           <Typography
             component={RouterLink}
             to="/"

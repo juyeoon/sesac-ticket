@@ -5,6 +5,7 @@ import { Alert, Button, Stack, TextField } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { AuthCard } from '../../components/auth/AuthCard'
 import { SendCodeButton } from '../../components/auth/SendCodeButton'
+import { PasswordField } from '../../components/common/PasswordField'
 import { ApiError } from '../../api/client'
 import { authApi } from './authApi'
 import { passwordResetSchema, type PasswordResetFormValues } from './authSchemas'
@@ -72,18 +73,16 @@ export default function PasswordResetPage() {
           </Alert>
         )}
 
-        <TextField
+        <PasswordField
           label="새 비밀번호"
-          type="password"
           placeholder="8자리 이상의 영문, 숫자 조합"
           fullWidth
           {...register('newPassword')}
           error={!!errors.newPassword}
           helperText={errors.newPassword?.message}
         />
-        <TextField
+        <PasswordField
           label="새 비밀번호 확인"
-          type="password"
           placeholder="8자리 이상의 영문, 숫자 조합"
           fullWidth
           {...register('newPasswordConfirm')}

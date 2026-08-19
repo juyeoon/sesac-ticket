@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { Alert, Button, Link as MuiLink, Stack, TextField, Typography } from '@mui/material'
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom'
 import { AuthCard } from '../../components/auth/AuthCard'
+import { PasswordField } from '../../components/common/PasswordField'
 import { useAuth } from '../../auth/AuthContext'
 import { ApiError } from '../../api/client'
 import { loginSchema, type LoginFormValues } from './authSchemas'
@@ -55,9 +56,8 @@ export default function LoginPage() {
           error={!!errors.email}
           helperText={errors.email?.message}
         />
-        <TextField
+        <PasswordField
           label="비밀번호"
-          type="password"
           placeholder="비밀번호를 입력해주세요"
           fullWidth
           {...register('password')}

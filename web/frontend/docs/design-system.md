@@ -79,9 +79,8 @@
 
 ## 4. Radius & Elevation
 
-- 기본 radius: `12px` (인풋, 작은 요소)
+- **인풋(TextField)과 버튼/칩은 같은 radius 토큰(`999px`, pill)을 쓴다.** border-radius는 요소 높이의 절반을 넘지 못하고 자동으로 clamp되므로, 인풋처럼 높이가 있는 요소도 같은 값을 주면 버튼과 동일하게 "완전히 둥근" 톤으로 보인다. 값 자체를 다르게 관리하면 나중에 둘 중 하나만 바뀌는 불일치가 또 생기니, 반드시 같은 토큰을 참조할 것.
 - 카드/패널 radius: `20px`
-- 버튼/칩: **완전한 pill 형태** (`border-radius: 999px`)
 - 그림자는 원칙적으로 쓰지 않는다. 구획은 `1px solid`(`Gray 100`) 보더로 구분한다. 꼭 필요할 때만 아주 약한 그림자(`0 1px 2px rgba(0,0,0,0.04)`)를 예외적으로 허용.
 
 ## 5. 컴포넌트 가이드
@@ -91,6 +90,7 @@
 - **필터 Chip**: 미선택 상태는 outlined, 선택된 상태는 `primary` 채움(검정) — 참고 레퍼런스의 "Today/This Week/This Month" 필터 패턴과 동일.
 - **통계/하이라이트 카드**: 배경은 액센트 Soft 컬러(blueSoft/greenSoft/yellowSoft) 중 하나, 보더 없이 radius만. 숫자는 `h4`, 라벨은 `subtitle2` + `text.secondary`.
 - **일반 콘텐츠 카드**: 흰 배경 + `Gray 100` 1px 보더, 그림자 없음.
+- **비밀번호 입력**: 항상 `src/components/common/PasswordField.tsx`를 쓴다. 눈 모양 아이콘으로 표시/숨김 토글 (기본은 숨김).
 
 ## 6. 좌석 상태 컬러 (예매 전용)
 

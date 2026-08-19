@@ -5,6 +5,7 @@ import { Alert, Button, Link as MuiLink, Stack, TextField, Typography } from '@m
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { AuthCard } from '../../components/auth/AuthCard'
 import { SendCodeButton } from '../../components/auth/SendCodeButton'
+import { PasswordField } from '../../components/common/PasswordField'
 import { ApiError } from '../../api/client'
 import { authApi } from './authApi'
 import { signupSchema, type SignupFormValues } from './authSchemas'
@@ -95,18 +96,16 @@ export default function SignupPage() {
           error={!!errors.nickname}
           helperText={errors.nickname?.message}
         />
-        <TextField
+        <PasswordField
           label="비밀번호"
-          type="password"
           placeholder="8자리 이상의 영문, 숫자 조합"
           fullWidth
           {...register('password')}
           error={!!errors.password}
           helperText={errors.password?.message}
         />
-        <TextField
+        <PasswordField
           label="비밀번호 확인"
-          type="password"
           placeholder="8자리 이상의 영문, 숫자 조합"
           fullWidth
           {...register('passwordConfirm')}
