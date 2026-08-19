@@ -6,6 +6,9 @@ import ComingSoonPage from '../pages/ComingSoonPage'
 import LoginPage from '../pages/auth/LoginPage'
 import SignupPage from '../pages/auth/SignupPage'
 import PasswordResetPage from '../pages/auth/PasswordResetPage'
+import PerformanceListPage from '../pages/performances/PerformanceListPage'
+import PerformanceDetailPage from '../pages/performances/PerformanceDetailPage'
+import ScheduleSelectPage from '../pages/performances/ScheduleSelectPage'
 
 /**
  * 전체 라우트 표. 아직 만들지 않은 화면은 ComingSoonPage로 채워두고,
@@ -16,12 +19,9 @@ export function AppRoutes() {
     <Routes>
       <Route element={<RootLayout />}>
         {/* Phase 2 — 공연 탐색 */}
-        <Route path="/" element={<ComingSoonPage title="공연 목록" />} />
-        <Route path="/performances/:performanceId" element={<ComingSoonPage title="공연 상세" />} />
-        <Route
-          path="/performances/:performanceId/schedules"
-          element={<ComingSoonPage title="회차 선택" />}
-        />
+        <Route path="/" element={<PerformanceListPage />} />
+        <Route path="/performances/:performanceId" element={<PerformanceDetailPage />} />
+        <Route path="/performances/:performanceId/schedules" element={<ScheduleSelectPage />} />
 
         {/* Phase 1 — 인증 */}
         <Route path="/login" element={<LoginPage />} />
