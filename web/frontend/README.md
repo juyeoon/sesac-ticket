@@ -3,6 +3,7 @@
 티켓 예매 서비스 새싹티켓의 프론트엔드입니다. `feature/ui` 브랜치에서 작업 중이며, 백엔드 API가 준비되기 전까지 **MSW(Mock Service Worker)로 실제 동작하는 목업 API**를 붙여서 화면을 구현합니다.
 
 > 화면/테스트 방법은 [`docs/testing-guide.md`](./docs/testing-guide.md), 색상·타이포 등 디자인 규칙은 [`docs/design-system.md`](./docs/design-system.md)를 참고하세요.
+> 백엔드 팀과 같이 결정해야 할 것들은 [`../../docs/backend-decisions-needed.md`](../../docs/backend-decisions-needed.md)에 정리해뒀습니다.
 
 ## 기술 스택
 
