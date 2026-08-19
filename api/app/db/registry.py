@@ -24,7 +24,7 @@
 """
 
 # --- A 담당 영역 (아래에만 추가) ---
-from app.domains.member.model import Member  # noqa: F401
+from app.domains.member.model import Member, MemberFavorite  # noqa: F401
 from app.domains.admin.model import Admin  # noqa: F401
 
 # --- B 담당 영역 (아래에만 추가) ---

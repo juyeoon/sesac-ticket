@@ -12,95 +12,83 @@
     dict 형태: {performance_id, title, thumbnail_url}
 
 [의존]
-- sqlalchemy (Core text())
+- app.domains.member.model (MemberFavorite)
+- app.domains.performance.model (Performance, PerformanceImage) — B 담당
 
 [호출자]
 - app.domains.member.service
 
 [주의]
-- performance/performance_image/member_favorite 테이블은 api/scripts/sql/sesac_ticket_init.sql
-  기준으로 이미 존재하지만, performance/performance_image의 SQLAlchemy ORM 모델은
-  아직 없다(B 담당, 미착수). 이 파일은 그 두 테이블을 SQLAlchemy ORM 모델로
-  등록하지 않고 raw SQL(Core text())로만 읽는다 — B가 나중에 domains/performance
-  모델을 Base.metadata에 등록할 때 테이블명이 겹쳐 충돌하는 걸 피하기 위함.
-  B의 모델이 생기면 이 파일을 ORM 기반으로 교체할 수 있다.
-- 테스트(SQLite)에서는 이 세 테이블이 Base.metadata에 없어 create_all()로
-  안 만들어지므로, tests/conftest.py에서 별도 raw DDL로 생성한다.
+- B의 domains/performance 모델이 없던 시점엔 raw SQL(Core text())로 구현했었으나,
+  B의 ORM 모델이 merge된 뒤로 정식 ORM 기반으로 교체함.
+- 썸네일은 Performance.images 관계(에서 sort_order로 정렬됨)의 첫 번째 항목을 쓴다.
 """
 
-from datetime import datetime
-
-from sqlalchemy import text
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+
+from app.domains.member.model import MemberFavorite
+from app.domains.performance.model import Performance
 
 
 def performance_exists(db: Session, performance_id: int) -> bool:
-    row = db.execute(
-        text("SELECT 1 FROM performance WHERE id = :performance_id"),
-        {"performance_id": performance_id},
-    ).first()
-    return row is not None
+    return db.get(Performance, performance_id) is not None
 
 
 def is_favorited(db: Session, member_id: int, performance_id: int) -> bool:
-    row = db.execute(
-        text(
-            "SELECT 1 FROM member_favorite "
-            "WHERE member_id = :member_id AND performance_id = :performance_id"
-        ),
-        {"member_id": member_id, "performance_id": performance_id},
-    ).first()
-    return row is not None
+    stmt = select(MemberFavorite.id).where(
+        MemberFavorite.member_id == member_id,
+        MemberFavorite.performance_id == performance_id,
+    )
+    return db.execute(stmt).first() is not None
 
 
 def add_favorite(db: Session, member_id: int, performance_id: int) -> None:
-    db.execute(
-        text(
-            "INSERT INTO member_favorite (member_id, performance_id, created_at) "
-            "VALUES (:member_id, :performance_id, :created_at)"
-        ),
-        {
-            "member_id": member_id,
-            "performance_id": performance_id,
-            "created_at": datetime.now(),
-        },
-    )
+    db.add(MemberFavorite(member_id=member_id, performance_id=performance_id))
     db.commit()
 
 
 def remove_favorite(db: Session, member_id: int, performance_id: int) -> bool:
-    result = db.execute(
-        text(
-            "DELETE FROM member_favorite "
-            "WHERE member_id = :member_id AND performance_id = :performance_id"
-        ),
-        {"member_id": member_id, "performance_id": performance_id},
+    stmt = select(MemberFavorite).where(
+        MemberFavorite.member_id == member_id,
+        MemberFavorite.performance_id == performance_id,
     )
+    favorite = db.execute(stmt).scalar_one_or_none()
+    if favorite is None:
+        return False
+
+    db.delete(favorite)
     db.commit()
-    return result.rowcount > 0
+    return True
 
 
 def list_favorites(
     db: Session, member_id: int, *, page: int, size: int
 ) -> tuple[list[dict], int]:
     total = db.execute(
-        text("SELECT COUNT(*) FROM member_favorite WHERE member_id = :member_id"),
-        {"member_id": member_id},
+        select(func.count())
+        .select_from(MemberFavorite)
+        .where(MemberFavorite.member_id == member_id)
     ).scalar_one()
 
-    rows = db.execute(
-        text(
-            "SELECT mf.performance_id AS performance_id, p.title AS title, "
-            "(SELECT pi.file_key FROM performance_image pi "
-            " WHERE pi.performance_id = mf.performance_id "
-            " ORDER BY pi.sort_order LIMIT 1) AS thumbnail_url "
-            "FROM member_favorite mf "
-            "JOIN performance p ON p.id = mf.performance_id "
-            "WHERE mf.member_id = :member_id "
-            "ORDER BY mf.created_at DESC "
-            "LIMIT :limit OFFSET :offset"
-        ),
-        {"member_id": member_id, "limit": size, "offset": page * size},
-    ).mappings().all()
+    stmt = (
+        select(MemberFavorite, Performance)
+        .join(Performance, Performance.id == MemberFavorite.performance_id)
+        .where(MemberFavorite.member_id == member_id)
+        .order_by(MemberFavorite.created_at.desc())
+        .limit(size)
+        .offset(page * size)
+    )
 
-    return [dict(row) for row in rows], total
+    items = []
+    for _favorite, performance in db.execute(stmt).all():
+        thumbnail_url = performance.images[0].file_key if performance.images else None
+        items.append(
+            {
+                "performance_id": performance.id,
+                "title": performance.title,
+                "thumbnail_url": thumbnail_url,
+            }
+        )
+
+    return items, total

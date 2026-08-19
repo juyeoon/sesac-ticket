@@ -17,13 +17,12 @@
 - pytest
 
 [주의]
-- performance/performance_image는 아직 ORM 모델이 없어(B 담당), 테스트에서도
-  raw SQL INSERT로 직접 공연 데이터를 준비한다 (conftest.py의 DDL 참고).
+- B의 domains/performance ORM 모델을 그대로 사용해 테스트 데이터를 만든다
+  (category_id/venue_id가 NOT NULL이라 Category/Venue도 함께 생성해야 함).
 """
 
-from datetime import datetime
-
-from sqlalchemy import text
+from app.domains.performance.model import Category, Performance, PerformanceImage
+from app.domains.venue.model import Venue
 
 
 def _signup_and_login(client, email: str) -> dict:
@@ -39,15 +38,21 @@ def _signup_and_login(client, email: str) -> dict:
 
 
 def _create_performance(db_session, title: str) -> int:
-    result = db_session.execute(
-        text(
-            "INSERT INTO performance (title, status, created_at) "
-            "VALUES (:title, 'ACTIVE', :created_at)"
-        ),
-        {"title": title, "created_at": datetime.now()},
+    category = Category(name=f"category-{title}", sort_order=0)
+    venue = Venue(name=f"venue-{title}")
+    db_session.add_all([category, venue])
+    db_session.flush()
+
+    performance = Performance(
+        title=title,
+        category_id=category.id,
+        venue_id=venue.id,
+        status="ACTIVE",
     )
+    db_session.add(performance)
     db_session.commit()
-    return result.lastrowid
+    db_session.refresh(performance)
+    return performance.id
 
 
 def test_add_favorite_then_appears_in_list(client, db_session):
@@ -113,3 +118,27 @@ def test_remove_favorite_then_disappears_from_list(client, db_session):
 
     list_response = client.get("/api/v1/users/me/favorites", headers=headers)
     assert list_response.json()["totalElements"] == 0
+
+
+def test_favorite_list_includes_thumbnail_from_first_image(client, db_session):
+    headers = _signup_and_login(client, "favorite-thumbnail@test.com")
+    performance_id = _create_performance(db_session, "테스트 공연 E")
+
+    db_session.add_all(
+        [
+            PerformanceImage(
+                performance_id=performance_id, file_key="second.jpg", sort_order=2
+            ),
+            PerformanceImage(
+                performance_id=performance_id, file_key="first.jpg", sort_order=1
+            ),
+        ]
+    )
+    db_session.commit()
+
+    client.post(f"/api/v1/users/me/favorites/{performance_id}", headers=headers)
+
+    list_response = client.get("/api/v1/users/me/favorites", headers=headers)
+    assert list_response.status_code == 200
+    thumbnail_url = list_response.json()["content"][0]["thumbnailUrl"]
+    assert thumbnail_url == "first.jpg"  # sort_order가 가장 낮은 이미지
