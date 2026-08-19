@@ -48,6 +48,7 @@ class Settings(BaseSettings):
 
     # --- 예매 ---
     hold_ttl_sec: int = 300
+    seat_status_cache_ttl_sec: int = 5  # 좌석 상태 조회(RESV-002) 캐시 TTL
 
     # --- 대기열 ---
     queue_enabled: bool = True

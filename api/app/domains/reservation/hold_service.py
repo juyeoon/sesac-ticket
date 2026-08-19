@@ -20,6 +20,9 @@
 - app.domains.reservation.router
 
 [주의]
+- 좌석 상태가 바뀔 때(선점/해제)마다 service.invalidate_seat_status_cache()를
+  호출해 RESV-002 캐시(seat:status:{scheduleId})를 무효화한다 — 다음 조회에서
+  DB의 최신 상태로 다시 채워지게 하기 위함.
 - Lua 스크립트(hold_seats.lua/release_seats.lua)가 최종 원자성을 보장하지만,
   그 전에 DB에서 좌석이 실제 존재하고 AVAILABLE인지 먼저 확인한다 (빠른 실패).
 - Hold 세션 정보는 Valkey `seat:hold:{holdId}`에 JSON으로 저장하고 TTL을 건다
@@ -47,6 +50,7 @@ from app.core.config import get_settings
 from app.core.exceptions import AppException, ErrorCode
 from app.deps.queue import verify_entry_ticket_value
 from app.domains.reservation import repository
+from app.domains.reservation.service import invalidate_seat_status_cache
 
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "cache" / "scripts"
 _HOLD_SCRIPT = (_SCRIPTS_DIR / "hold_seats.lua").read_text(encoding="utf-8")
@@ -122,6 +126,7 @@ def create_hold(
         }
     )
     client.set(hold_key(hold_id), session_payload, ex=settings.hold_ttl_sec)
+    invalidate_seat_status_cache(schedule_id)
 
     return HoldResult(hold_id=hold_id, seat_ids=seat_ids, expires_at=expires_at)
 
@@ -150,6 +155,7 @@ def release_hold(db: Session, *, hold_id: str, member_id: int) -> None:
 
     repository.mark_seats_available(db, hold_log.schedule_seat_ids)
     repository.mark_hold_released(db, hold_log)
+    invalidate_seat_status_cache(hold_log.schedule_id)
 
 
 def get_hold(*, hold_id: str, member_id: int) -> HoldDetail:
