@@ -25,6 +25,9 @@
 - get_reservation_seats_detail(db, reservation_id) -> list[dict]
 - list_reservations_by_member(db, member_id, *, page, size, status=None) -> tuple[list[dict], int]
     RESV-007 — 반드시 writer 세션으로 호출 (복제 지연으로 방금 만든 예매가 안 보이는 문제 방지).
+- mark_hold_expired(db, hold_log) -> None
+- get_expired_holding_holds(db, *, now) -> list[SeatHoldLog]
+    hold_sweeper가 사용 — status=HOLDING이면서 expires_at이 지난 것들.
 
 [의존]
 - app.domains.reservation.model (ScheduleSeat, SeatHoldLog, Reservation, ReservationSeat)
@@ -120,6 +123,20 @@ def mark_hold_released(db: Session, hold_log: SeatHoldLog) -> None:
 def mark_hold_converted(db: Session, hold_log: SeatHoldLog) -> None:
     hold_log.status = "CONVERTED"
     db.commit()
+
+
+def mark_hold_expired(db: Session, hold_log: SeatHoldLog) -> None:
+    hold_log.status = "EXPIRED"
+    hold_log.released_at = datetime.now()
+    db.commit()
+
+
+def get_expired_holding_holds(db: Session, *, now: datetime) -> list[SeatHoldLog]:
+    stmt = select(SeatHoldLog).where(
+        SeatHoldLog.status == "HOLDING",
+        SeatHoldLog.expires_at < now,
+    )
+    return list(db.execute(stmt).scalars().all())
 
 
 def mark_seats_reserved(db: Session, seat_ids: list[int]) -> None:

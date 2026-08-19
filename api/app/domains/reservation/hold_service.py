@@ -7,6 +7,9 @@
 - create_hold(db, *, member_id, schedule_id, seat_ids, entry_ticket) -> HoldResult
 - release_hold(db, *, hold_id, member_id) -> None
 - get_hold(*, hold_id, member_id) -> HoldDetail
+- expire_hold(db, hold_log) -> None
+    workers.hold_sweeper 전용. release_hold와 달리 소유자 검증이 없다 — TTL이
+    지난 hold를 시스템이 강제로 되돌리는 것이므로 member_id 대조가 의미 없음.
 
 [의존]
 - app.deps.queue.verify_entry_ticket_value (entryTicket 검증 — RESV-003은 바디로 옴)
@@ -50,6 +53,7 @@ from app.core.config import get_settings
 from app.core.exceptions import AppException, ErrorCode
 from app.deps.queue import verify_entry_ticket_value
 from app.domains.reservation import repository
+from app.domains.reservation.model import SeatHoldLog
 from app.domains.reservation.service import invalidate_seat_status_cache
 
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "cache" / "scripts"
@@ -155,6 +159,17 @@ def release_hold(db: Session, *, hold_id: str, member_id: int) -> None:
 
     repository.mark_seats_available(db, hold_log.schedule_seat_ids)
     repository.mark_hold_released(db, hold_log)
+    invalidate_seat_status_cache(hold_log.schedule_id)
+
+
+def expire_hold(db: Session, hold_log: SeatHoldLog) -> None:
+    client = get_master_client()
+    lock_keys = [seat_lock(sid) for sid in hold_log.schedule_seat_ids]
+    eval_with_fallback(client, _RELEASE_SCRIPT_SHA, _RELEASE_SCRIPT, lock_keys, [hold_log.hold_id])
+    client.delete(hold_key(hold_log.hold_id))
+
+    repository.mark_seats_available(db, hold_log.schedule_seat_ids)
+    repository.mark_hold_expired(db, hold_log)
     invalidate_seat_status_cache(hold_log.schedule_id)
 
 
