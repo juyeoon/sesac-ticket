@@ -96,7 +96,15 @@ export default function ScheduleSelectPage() {
                       <Button
                         variant={soldOut ? 'outlined' : 'contained'}
                         disabled={soldOut}
-                        onClick={() => navigate(`/schedules/${schedule.scheduleId}/seats`)}
+                        onClick={() =>
+                          navigate(`/schedules/${schedule.scheduleId}/seats`, {
+                            state: {
+                              performanceId: id,
+                              performanceTitle: performance?.title ?? '',
+                              venueId: performance?.venue.id,
+                            },
+                          })
+                        }
                       >
                         {soldOut ? '매진' : '선택'}
                       </Button>

@@ -161,3 +161,13 @@ export const performances: MockPerformance[] = [
     ],
   },
 ]
+
+export function findPerformanceBySchedule(scheduleId: number) {
+  return performances.find((p) => p.schedules.some((s) => s.scheduleId === scheduleId)) ?? null
+}
+
+export function findSchedule(scheduleId: number) {
+  const performance = findPerformanceBySchedule(scheduleId)
+  const schedule = performance?.schedules.find((s) => s.scheduleId === scheduleId) ?? null
+  return performance && schedule ? { performance, schedule } : null
+}

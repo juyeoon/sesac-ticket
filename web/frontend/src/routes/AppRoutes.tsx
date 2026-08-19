@@ -9,6 +9,10 @@ import PasswordResetPage from '../pages/auth/PasswordResetPage'
 import PerformanceListPage from '../pages/performances/PerformanceListPage'
 import PerformanceDetailPage from '../pages/performances/PerformanceDetailPage'
 import ScheduleSelectPage from '../pages/performances/ScheduleSelectPage'
+import QueuePage from '../pages/queue/QueuePage'
+import SeatSelectPage from '../pages/reservations/SeatSelectPage'
+import BankTransferFormPage from '../pages/reservations/BankTransferFormPage'
+import ReservationConfirmPage from '../pages/reservations/ReservationConfirmPage'
 
 /**
  * 전체 라우트 표. 아직 만들지 않은 화면은 ComingSoonPage로 채워두고,
@@ -31,16 +35,10 @@ export function AppRoutes() {
         <Route path="/password/reset-request" element={<Navigate to="/password/reset" replace />} />
 
         {/* Phase 3 — 예매 / 대기열 */}
-        <Route path="/queue/:queueToken" element={<ComingSoonPage title="대기열" />} />
-        <Route path="/schedules/:scheduleId/seats" element={<ComingSoonPage title="좌석 선택" />} />
-        <Route
-          path="/reservations/bank-transfer/new"
-          element={<ComingSoonPage title="무통장입금 예매" />}
-        />
-        <Route
-          path="/reservations/bank-transfer/:reservationId"
-          element={<ComingSoonPage title="예매 확인" />}
-        />
+        <Route path="/queue/:queueToken" element={<QueuePage />} />
+        <Route path="/schedules/:scheduleId/seats" element={<SeatSelectPage />} />
+        <Route path="/reservations/bank-transfer/new" element={<BankTransferFormPage />} />
+        <Route path="/reservations/bank-transfer/:reservationId" element={<ReservationConfirmPage />} />
 
         {/* Phase 4 — 마이페이지 */}
         <Route path="/mypage" element={<ComingSoonPage title="내 정보" />} />

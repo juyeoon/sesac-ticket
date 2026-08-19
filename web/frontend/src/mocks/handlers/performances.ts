@@ -1,7 +1,21 @@
 import { http, HttpResponse } from 'msw'
 import { performances } from '../data/performances'
+import { countRemainingByGrade } from '../seatStatus'
 
 const BASE = '/api/v1'
+
+/** 잔여석은 mock 데이터의 고정값이 아니라 실제 좌석 상태 저장소(store.seatStatusBySchedule) 기준으로 계산한다.
+ * 그래야 좌석을 선점/예매했을 때 목록·상세 화면의 "잔여" 숫자도 같이 줄어든다. */
+function withLiveRemaining(schedule: (typeof performances)[number]['schedules'][number]) {
+  const live = countRemainingByGrade(schedule.scheduleId)
+  return {
+    ...schedule,
+    seatGrades: schedule.seatGrades.map((g) => ({
+      ...g,
+      remaining: live?.get(g.grade) ?? g.remaining,
+    })),
+  }
+}
 
 function toListItem(p: (typeof performances)[number]) {
   return {
@@ -44,7 +58,7 @@ export const performanceHandlers = [
   http.get(`${BASE}/performances/:performanceId/schedules`, ({ params }) => {
     const performance = performances.find((p) => p.id === Number(params.performanceId))
     if (!performance) return HttpResponse.json({ message: '공연을 찾을 수 없습니다.' }, { status: 404 })
-    return HttpResponse.json(performance.schedules)
+    return HttpResponse.json(performance.schedules.map(withLiveRemaining))
   }),
 
   http.get(`${BASE}/performances/:performanceId`, ({ params }) => {
@@ -60,12 +74,7 @@ export const performanceHandlers = [
       ticketOpenAt: performance.ticketOpenAt,
       ticketCloseAt: performance.ticketCloseAt,
       status: performance.status,
-      schedules: performance.schedules.map((s) => ({
-        scheduleId: s.scheduleId,
-        date: s.date,
-        time: s.time,
-        seatGrades: s.seatGrades,
-      })),
+      schedules: performance.schedules.map(withLiveRemaining),
       priceInfo: { minPrice: Math.min(...prices), maxPrice: Math.max(...prices) },
       runningTimeMin: performance.runningTimeMin,
       ageLimit: performance.ageLimit,

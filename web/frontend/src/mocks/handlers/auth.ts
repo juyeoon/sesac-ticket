@@ -1,18 +1,11 @@
 import { http, HttpResponse } from 'msw'
 import { db, findUserByEmail, issueMockToken } from '../db'
+import { requireAuth } from '../requireAuth'
 
 const BASE = '/api/v1'
 
 function randomCode() {
   return String(Math.floor(100000 + Math.random() * 900000))
-}
-
-function requireAuth(request: Request) {
-  const auth = request.headers.get('authorization')
-  if (!auth?.startsWith('Bearer ')) return null
-  const token = auth.slice('Bearer '.length)
-  const userId = Number(token.split('-')[1])
-  return db.users.find((u) => u.id === userId) ?? null
 }
 
 export const authHandlers = [

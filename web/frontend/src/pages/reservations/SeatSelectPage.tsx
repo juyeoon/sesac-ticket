@@ -1,0 +1,280 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Container,
+  Paper,
+  Snackbar,
+  Stack,
+  Typography,
+} from '@mui/material'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { SeatGrid, type MergedSeat } from '../../components/reservations/SeatGrid'
+import { SeatLegend } from '../../components/reservations/SeatLegend'
+import { CenteredMessagePage } from '../../components/common/CenteredMessagePage'
+import { seatApi } from './seatApi'
+import { performanceApi } from '../performances/performanceApi'
+import { queueApi } from '../queue/queueApi'
+import { getValidQueueContext, type QueueContext } from '../queue/entryTicketStorage'
+import { useHoldCountdown, formatCountdown } from './useHoldCountdown'
+
+const MAX_SEATS = 4
+
+interface LocationState {
+  performanceId?: number
+  performanceTitle?: string
+  venueId?: number
+}
+
+export default function SeatSelectPage() {
+  const { scheduleId: scheduleIdParam } = useParams()
+  const scheduleId = Number(scheduleIdParam)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const locState = (location.state as LocationState | null) ?? null
+
+  const [context, setContext] = useState<QueueContext | null | 'checking'>('checking')
+  const [selectedSeatIds, setSelectedSeatIds] = useState<number[]>([])
+  const [holdId, setHoldId] = useState<string | null>(null)
+  const [limitAlertOpen, setLimitAlertOpen] = useState(false)
+
+  const enterQueueMutation = useMutation({
+    mutationFn: () => queueApi.enter(locState!.performanceId!, scheduleId),
+    onSuccess: (res) => {
+      navigate(`/queue/${res.queueToken}`, {
+        replace: true,
+        state: {
+          scheduleId,
+          performanceId: locState!.performanceId,
+          performanceTitle: locState!.performanceTitle ?? '',
+          venueId: locState!.venueId,
+        },
+      })
+    },
+  })
+
+  useEffect(() => {
+    const cached = getValidQueueContext(scheduleId)
+    if (cached) {
+      setContext(cached)
+      return
+    }
+    if (locState?.performanceId && locState.venueId) {
+      enterQueueMutation.mutate()
+      return
+    }
+    setContext(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduleId])
+
+  const { data: venueSeatMap } = useQuery({
+    queryKey: ['venue-seat-map', context && context !== 'checking' ? context.venueId : null],
+    queryFn: () => seatApi.venueSeatMap((context as QueueContext).venueId),
+    enabled: !!context && context !== 'checking',
+  })
+  const { data: scheduleSeats } = useQuery({
+    queryKey: ['schedule-seats', scheduleId],
+    queryFn: () => seatApi.scheduleSeats(scheduleId),
+    enabled: !!context && context !== 'checking',
+  })
+  const { data: performance } = useQuery({
+    queryKey: ['performance', context && context !== 'checking' ? context.performanceId : null],
+    queryFn: () => performanceApi.detail((context as QueueContext).performanceId),
+    enabled: !!context && context !== 'checking',
+  })
+
+  const mergedSeats: MergedSeat[] = useMemo(() => {
+    if (!venueSeatMap || !scheduleSeats) return []
+    const statusBySeatId = new Map(scheduleSeats.map((s) => [s.seatId, s.status]))
+    return venueSeatMap.sections
+      .flatMap((s) => s.seats)
+      .map((seat) => ({
+        seatId: seat.seatId,
+        x: seat.x,
+        y: seat.y,
+        row: seat.row,
+        number: seat.number,
+        grade: seat.grade,
+        status: statusBySeatId.get(seat.seatId) ?? 'AVAILABLE',
+      }))
+  }, [venueSeatMap, scheduleSeats])
+
+  const priceByGrade = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const g of performance?.seatGrades ?? []) map.set(g.grade, g.price)
+    return map
+  }, [performance])
+
+  const selectedSeats = mergedSeats.filter((s) => selectedSeatIds.includes(s.seatId))
+  const totalPrice = selectedSeats.reduce((sum, s) => sum + (priceByGrade.get(s.grade) ?? 0), 0)
+
+  const holdMutation = useMutation({
+    mutationFn: () => seatApi.createHold(scheduleId, selectedSeatIds, (context as QueueContext).ticket),
+    onSuccess: (res) => setHoldId(res.holdId),
+  })
+
+  const releaseMutation = useMutation({
+    mutationFn: () => seatApi.releaseHold(holdId!),
+    onSuccess: () => {
+      setHoldId(null)
+      setSelectedSeatIds([])
+      queryClient.invalidateQueries({ queryKey: ['schedule-seats', scheduleId] })
+    },
+  })
+
+  const { remainingSeconds, expired } = useHoldCountdown(holdId)
+
+  useEffect(() => {
+    if (expired && holdId) {
+      setHoldId(null)
+      setSelectedSeatIds([])
+      queryClient.invalidateQueries({ queryKey: ['schedule-seats', scheduleId] })
+    }
+  }, [expired, holdId, queryClient, scheduleId])
+
+  const toggleSeat = (seatId: number) => {
+    setSelectedSeatIds((prev) => {
+      if (prev.includes(seatId)) return prev.filter((id) => id !== seatId)
+      if (prev.length >= MAX_SEATS) {
+        setLimitAlertOpen(true)
+        return prev
+      }
+      return [...prev, seatId]
+    })
+  }
+
+  const handleProceedToPayment = () => {
+    navigate('/reservations/bank-transfer/new', {
+      state: {
+        holdId,
+        performanceId: context !== 'checking' ? (context as QueueContext).performanceId : undefined,
+        performanceTitle: performance?.title,
+        scheduleId,
+        seats: selectedSeats.map((s) => ({ seatId: s.seatId, grade: s.grade, row: s.row, number: s.number })),
+        totalPrice,
+      },
+    })
+  }
+
+  if (context === null) {
+    return (
+      <CenteredMessagePage
+        eyebrow="좌석 선택"
+        title="다시 선택해주세요"
+        description="공연 상세 페이지에서 회차를 다시 선택하면 좌석을 고를 수 있어요."
+      />
+    )
+  }
+
+  if (context === 'checking' || enterQueueMutation.isPending) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  return (
+    <Container maxWidth="md" sx={{ py: 5, pb: 16 }}>
+      <Typography variant="overline" color="text.secondary">
+        좌석 선택
+      </Typography>
+      <Typography variant="h3" sx={{ mb: 3 }}>
+        {performance?.title ?? context.performanceTitle}
+      </Typography>
+
+      <Box sx={{ mb: 3 }}>
+        <SeatLegend />
+      </Box>
+
+      {mergedSeats.length === 0 ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <SeatGrid seats={mergedSeats} selectedSeatIds={selectedSeatIds} onToggle={toggleSeat} />
+      )}
+
+      <Paper
+        sx={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          borderRadius: 0,
+          borderTop: 1,
+          borderColor: 'divider',
+          py: 2,
+        }}
+        elevation={0}
+      >
+        <Container maxWidth="md">
+          {!holdId ? (
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
+              <Box sx={{ flex: 1 }}>
+                {selectedSeats.length === 0 ? (
+                  <Typography color="text.secondary">좌석을 선택해주세요 (최대 {MAX_SEATS}석)</Typography>
+                ) : (
+                  <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+                    {selectedSeats.map((s) => (
+                      <Chip key={s.seatId} label={`${s.grade} ${s.row}열 ${s.number}번`} />
+                    ))}
+                  </Stack>
+                )}
+              </Box>
+              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                <Typography variant="h6">{totalPrice.toLocaleString()}원</Typography>
+                <Button
+                  variant="contained"
+                  size="large"
+                  disabled={selectedSeats.length === 0 || holdMutation.isPending}
+                  onClick={() => holdMutation.mutate()}
+                >
+                  선점하기
+                </Button>
+              </Stack>
+            </Stack>
+          ) : (
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  선점 완료 · 남은 시간{' '}
+                  <Box component="span" sx={{ fontWeight: 700, color: 'error.main' }}>
+                    {remainingSeconds !== null ? formatCountdown(remainingSeconds) : '--:--'}
+                  </Box>
+                </Typography>
+                <Typography variant="h6">{totalPrice.toLocaleString()}원</Typography>
+              </Box>
+              <Stack direction="row" spacing={1.5}>
+                <Button variant="outlined" onClick={() => releaseMutation.mutate()} disabled={releaseMutation.isPending}>
+                  선택 취소
+                </Button>
+                <Button variant="contained" size="large" onClick={handleProceedToPayment}>
+                  예매하기
+                </Button>
+              </Stack>
+            </Stack>
+          )}
+        </Container>
+      </Paper>
+
+      {holdMutation.isError && (
+        <Alert severity="error" sx={{ position: 'fixed', bottom: 90, left: 16, right: 16, maxWidth: 448, mx: 'auto' }}>
+          이미 다른 사람이 선점했거나 판매된 좌석이 있어요. 다시 선택해주세요.
+        </Alert>
+      )}
+
+      <Snackbar
+        open={limitAlertOpen}
+        autoHideDuration={2500}
+        onClose={() => setLimitAlertOpen(false)}
+        message={`최대 ${MAX_SEATS}석까지 선택할 수 있어요.`}
+      />
+    </Container>
+  )
+}
