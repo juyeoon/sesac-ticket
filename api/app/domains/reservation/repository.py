@@ -15,11 +15,20 @@
 - schedule_exists(db, schedule_id) -> bool
 - get_schedule_seats_with_seat_info(db, schedule_id) -> list[dict]
     schedule_seat를 venue_seat와 JOIN해서 section/row/number까지 포함한 좌석 목록 반환.
+- mark_hold_converted(db, hold_log) -> None
+- mark_seats_reserved(db, seat_ids) -> None
+- create_reservation_with_payment(db, *, ...) -> Reservation
+    reservation/reservation_seat/bank_transfer_payment를 한 트랜잭션으로 INSERT (RESV-004).
+- get_reservation_by_id(db, reservation_id) -> Reservation | None
+- get_bank_transfer_payment(db, reservation_id) -> BankTransferPayment | None
+- get_schedule_with_performance(db, schedule_id) -> Schedule | None
+- get_reservation_seats_detail(db, reservation_id) -> list[dict]
 
 [의존]
-- app.domains.reservation.model (ScheduleSeat, SeatHoldLog)
+- app.domains.reservation.model (ScheduleSeat, SeatHoldLog, Reservation, ReservationSeat)
+- app.domains.payment.model (BankTransferPayment)
 - app.domains.venue.model (VenueSeat) — JOIN용
-- app.domains.performance.model (Schedule) — 존재 확인용
+- app.domains.performance.model (Schedule, Performance) — 존재 확인/JOIN용
 
 [호출자]
 - app.domains.reservation.hold_service, app.domains.reservation.service
@@ -33,8 +42,14 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domains.performance.model import Schedule
-from app.domains.reservation.model import ScheduleSeat, SeatHoldLog
+from app.domains.payment.model import BankTransferPayment
+from app.domains.performance.model import Performance, Schedule
+from app.domains.reservation.model import (
+    Reservation,
+    ReservationSeat,
+    ScheduleSeat,
+    SeatHoldLog,
+)
 from app.domains.venue.model import VenueSeat
 
 
@@ -98,6 +113,114 @@ def mark_hold_released(db: Session, hold_log: SeatHoldLog) -> None:
     hold_log.status = "RELEASED"
     hold_log.released_at = datetime.now()
     db.commit()
+
+
+def mark_hold_converted(db: Session, hold_log: SeatHoldLog) -> None:
+    hold_log.status = "CONVERTED"
+    db.commit()
+
+
+def mark_seats_reserved(db: Session, seat_ids: list[int]) -> None:
+    seats = db.execute(
+        select(ScheduleSeat).where(ScheduleSeat.id.in_(seat_ids))
+    ).scalars().all()
+    for seat in seats:
+        seat.status = "RESERVED"
+    db.commit()
+
+
+def create_reservation_with_payment(
+    db: Session,
+    *,
+    member_id: int,
+    schedule_id: int,
+    hold_id: str,
+    seats: list[ScheduleSeat],
+    depositor_name: str,
+    bank_account_info: str,
+    payment_due_at: datetime,
+) -> Reservation:
+    total_amount = sum(seat.price for seat in seats)
+    reservation = Reservation(
+        member_id=member_id,
+        schedule_id=schedule_id,
+        hold_id=hold_id,
+        payment_method="BANK_TRANSFER",
+        status="PENDING_PAYMENT",
+        total_amount=total_amount,
+    )
+    db.add(reservation)
+    db.flush()
+
+    for seat in seats:
+        db.add(
+            ReservationSeat(
+                reservation_id=reservation.id,
+                schedule_seat_id=seat.id,
+                price_snapshot=seat.price,
+            )
+        )
+
+    db.add(
+        BankTransferPayment(
+            reservation_id=reservation.id,
+            depositor_name=depositor_name,
+            bank_account_info=bank_account_info,
+            payment_due_at=payment_due_at,
+        )
+    )
+
+    db.commit()
+    db.refresh(reservation)
+    return reservation
+
+
+def get_reservation_by_id(db: Session, reservation_id: int) -> Reservation | None:
+    return db.get(Reservation, reservation_id)
+
+
+def get_bank_transfer_payment(db: Session, reservation_id: int) -> BankTransferPayment | None:
+    stmt = select(BankTransferPayment).where(
+        BankTransferPayment.reservation_id == reservation_id
+    )
+    return db.execute(stmt).scalar_one_or_none()
+
+
+def get_schedule_with_performance(db: Session, schedule_id: int) -> Schedule | None:
+    stmt = (
+        select(Schedule)
+        .join(Performance, Performance.id == Schedule.performance_id)
+        .where(Schedule.id == schedule_id)
+    )
+    return db.execute(stmt).scalar_one_or_none()
+
+
+def get_reservation_seats_detail(db: Session, reservation_id: int) -> list[dict]:
+    stmt = (
+        select(
+            VenueSeat.section,
+            VenueSeat.row_no,
+            VenueSeat.seat_no,
+            ScheduleSeat.grade,
+            ReservationSeat.price_snapshot,
+        )
+        .select_from(ReservationSeat)
+        .join(ScheduleSeat, ScheduleSeat.id == ReservationSeat.schedule_seat_id)
+        .join(VenueSeat, VenueSeat.id == ScheduleSeat.venue_seat_id)
+        .where(ReservationSeat.reservation_id == reservation_id)
+        .order_by(VenueSeat.section, VenueSeat.row_no, VenueSeat.seat_no)
+    )
+    rows = db.execute(stmt).all()
+    return [
+        {
+            "section": row.section,
+            "row": row.row_no,
+            "number": row.seat_no,
+            "grade": row.grade,
+            "price": row.price_snapshot,
+        }
+        for row in rows
+    ]
 
 
 def schedule_exists(db: Session, schedule_id: int) -> bool:
