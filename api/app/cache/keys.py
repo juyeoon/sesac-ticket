@@ -13,8 +13,9 @@
 - queue(performance_id, schedule_id) -> str    A: 대기열 Sorted Set (member=queueToken)
 - queue_token(token) -> str            A: queueToken -> "memberId:performanceId:scheduleId"
 - queue_ready(token) -> str            A: queueToken의 READY 상태(entryTicket) 저장
-- seat_status(schedule_id) -> str      B: 좌석 상태 캐시
-- hold(hold_id) -> str                 B: 선점 정보
+- seat_status(schedule_id) -> str      B: 좌석 상태 캐시 (Hash)
+- seat_lock(schedule_seat_id) -> str   B: 좌석 개별 락 (SETNX, TTL) — 동시 선점 방지
+- hold(hold_id) -> str                 B: 선점 세션 정보 {scheduleId, seatIds, memberId, expiresAt}
 - worker_lock(name) -> str             공통: 워커 리더 선출 락
 
 [의존]
@@ -69,6 +70,10 @@ def queue_ready(token: str) -> str:
 
 def seat_status(schedule_id: int) -> str:
     return f"seat:status:{schedule_id}"
+
+
+def seat_lock(schedule_seat_id: int) -> str:
+    return f"seat:lock:{schedule_seat_id}"
 
 
 def hold(hold_id: str) -> str:

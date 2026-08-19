@@ -4,7 +4,7 @@
 [역할] AppException 베이스 + ErrorCode enum. 에러 코드는 이 파일에서만 정의.
 
 [구현할 것]
-- class ErrorCode(str, Enum): AUTH_*, MEMBER_*, PERF_*, RESV_*, QUEUE_*, COMMON_* 접두사
+- class ErrorCode(str, Enum): AUTH_*, MEMBER_*, PERF_*, RESV_*, QUEUE_*, SUPPORT_*, COMMON_* 접두사
 - class AppException(Exception): error_code / message / status_code 보관
 
 [의존]
@@ -14,8 +14,8 @@
 - 전 도메인 service/router, app.core.handlers
 
 [주의]
-- 접두사 규칙: AUTH_*, MEMBER_*, PERF_*, RESV_*, QUEUE_*, COMMON_*. 새 에러 코드는
-  반드시 이 파일 한 곳에서만 추가한다. 각자 만들면 코드값이 겹침.
+- 접두사 규칙: AUTH_*, MEMBER_*, PERF_*, RESV_*, QUEUE_*, SUPPORT_*, COMMON_*. 새
+  에러 코드는 반드시 이 파일 한 곳에서만 추가한다. 각자 만들면 코드값이 겹침.
 """
 
 from enum import Enum
@@ -41,16 +41,23 @@ class ErrorCode(str, Enum):
     PERF_SCHEDULE_NOT_FOUND = "PERF_SCHEDULE_NOT_FOUND"
 
     # RESV_*
+    RESV_SEAT_NOT_FOUND = "RESV_SEAT_NOT_FOUND"
     RESV_SEAT_ALREADY_HELD = "RESV_SEAT_ALREADY_HELD"
     RESV_SEAT_ALREADY_RESERVED = "RESV_SEAT_ALREADY_RESERVED"
     RESV_HOLD_NOT_FOUND = "RESV_HOLD_NOT_FOUND"
     RESV_HOLD_EXPIRED = "RESV_HOLD_EXPIRED"
     RESV_HOLD_OWNER_MISMATCH = "RESV_HOLD_OWNER_MISMATCH"
+    RESV_NOT_FOUND = "RESV_NOT_FOUND"
+    RESV_OWNER_MISMATCH = "RESV_OWNER_MISMATCH"
+    RESV_INVALID_STATUS_TRANSITION = "RESV_INVALID_STATUS_TRANSITION"
 
     # QUEUE_*
     QUEUE_ENTRY_TICKET_MISSING = "QUEUE_ENTRY_TICKET_MISSING"
     QUEUE_ENTRY_TICKET_INVALID = "QUEUE_ENTRY_TICKET_INVALID"
     QUEUE_NOT_ENTERED = "QUEUE_NOT_ENTERED"
+
+    # SUPPORT_*
+    SUPPORT_POST_NOT_FOUND = "SUPPORT_POST_NOT_FOUND"
 
     # COMMON_*
     COMMON_VALIDATION_FAILED = "COMMON_VALIDATION_FAILED"
@@ -70,14 +77,19 @@ _DEFAULT_STATUS_CODE: dict[ErrorCode, int] = {
     ErrorCode.MEMBER_FAVORITE_NOT_FOUND: 404,
     ErrorCode.PERF_NOT_FOUND: 404,
     ErrorCode.PERF_SCHEDULE_NOT_FOUND: 404,
+    ErrorCode.RESV_SEAT_NOT_FOUND: 404,
     ErrorCode.RESV_SEAT_ALREADY_HELD: 409,
     ErrorCode.RESV_SEAT_ALREADY_RESERVED: 409,
     ErrorCode.RESV_HOLD_NOT_FOUND: 404,
     ErrorCode.RESV_HOLD_EXPIRED: 410,
     ErrorCode.RESV_HOLD_OWNER_MISMATCH: 403,
+    ErrorCode.RESV_NOT_FOUND: 404,
+    ErrorCode.RESV_OWNER_MISMATCH: 403,
+    ErrorCode.RESV_INVALID_STATUS_TRANSITION: 409,
     ErrorCode.QUEUE_ENTRY_TICKET_MISSING: 403,
     ErrorCode.QUEUE_ENTRY_TICKET_INVALID: 403,
     ErrorCode.QUEUE_NOT_ENTERED: 404,
+    ErrorCode.SUPPORT_POST_NOT_FOUND: 404,
     ErrorCode.COMMON_VALIDATION_FAILED: 422,
     ErrorCode.COMMON_INTERNAL_ERROR: 500,
 }
