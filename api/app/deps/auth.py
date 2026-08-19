@@ -17,6 +17,7 @@
 
 [주의]
 - access 토큰만 허용한다 (payload["type"] == "access"). refresh 토큰으로는 인증 불가.
+- 탈퇴(status=WITHDRAWN)한 회원은 access 토큰이 아직 만료 전이어도 접근을 거부한다.
 """
 
 from fastapi import Depends, Header
@@ -50,6 +51,8 @@ def get_current_member(
     member = member_repository.get_member_by_id(db, int(payload["sub"]))
     if member is None:
         raise AppException(ErrorCode.AUTH_TOKEN_INVALID)
+    if member.status == "WITHDRAWN":
+        raise AppException(ErrorCode.AUTH_MEMBER_WITHDRAWN)
     return member
 
 

@@ -53,9 +53,32 @@ class Settings(BaseSettings):
     queue_enabled: bool = True
     queue_dispatch_batch_size: int = 50
     queue_poll_interval_sec: int = 3
+    queue_token_ttl_sec: int = 1800  # queueToken 유효시간(초). 이 안에 방출 안 되면 만료
+
+    # --- 인증 부가 기능 (비밀번호 재설정 / 이메일 인증) ---
+    password_reset_ttl_sec: int = 900  # 재설정 토큰 유효시간 15분
+    email_verification_ttl_sec: int = 600  # 인증 코드 유효시간 10분
+    email_verification_cooldown_sec: int = 60  # 재요청 쿨다운(429 방지 최소 구현)
+
+    # --- 이메일 발송 (SMTP) ---
+    smtp_host: str = ""  # 비어있으면 실제 발송 없이 로그만 남김 (로컬/테스트 기본값)
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_use_tls: bool = True
+    smtp_from_email: str = "no-reply@sesac-ticket.local"
+    smtp_from_name: str = "새싹티켓"
 
     # --- 인프라 ---
     trusted_proxy_hosts: str = "*"  # ALB 2단 구성. 운영에서는 nginx 내부 IP 대역으로 한정할 것
+    cookie_secure: bool = True  # refreshToken 쿠키 Secure 플래그. 로컬 http 개발 시 false
+
+    # --- 앱/API 버전 (SYS-003) ---
+    api_version: str = "1.0.0"
+    app_latest_version: str = "1.0.0"
+    app_min_required_version: str = "1.0.0"
+    app_force_update: bool = False
+    app_update_url: str = ""
 
     # --- 인스턴스 ---
     instance_id: str = "api-local"
