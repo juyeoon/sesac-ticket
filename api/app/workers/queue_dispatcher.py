@@ -13,6 +13,8 @@
 - app.workers.base (리더 선출)
 - app.db.session (ReaderSessionLocal) — 활성 회차 목록 조회용
 - app.domains.performance.model (Schedule)
+- app.domains.venue.model — 직접 쓰진 않지만, Performance.venue가 문자열 참조라
+  이 모듈이 import돼서 Venue 클래스가 매퍼 registry에 등록돼 있어야 함
 
 [호출자]
 - systemd (sesac-dispatcher.service)
@@ -24,6 +26,9 @@
 - 활성 회차(schedule) 목록은 Schedule.status == "OPEN"인 것 전체를 매 틱마다
   reader로 조회한다. 복제 지연으로 방금 CLOSED된 회차가 한두 틱 더 잡혀도
   dispatch_once가 좌석 재고를 바꾸는 건 아니라서 무해하다.
+- API 앱 프로세스는 venue 라우터 등록 경로로 domains.venue.model이 이미 import돼
+  있어서 이 문제가 안 드러나지만, 이 워커는 완전히 별도 프로세스라 독립적으로
+  import해줘야 한다 (tests/conftest.py가 같은 이유로 동일하게 처리해둔 패턴).
 - ZPOPMIN으로 꺼낸 각 queueToken의 실제 member_id는 queue:token:{token} 매핑에서
   읽는다. 매핑이 이미 만료(TTL 종료)됐다면 해당 항목은 건너뛴다.
 """
@@ -41,6 +46,7 @@ from app.cache.keys import queue_token as queue_token_key
 from app.core.config import get_settings
 from app.db.session import ReaderSessionLocal
 from app.domains.performance.model import Schedule
+from app.domains.venue import model as _venue_model  # noqa: F401
 from app.workers.base import run_as_leader
 
 logger = logging.getLogger(__name__)
