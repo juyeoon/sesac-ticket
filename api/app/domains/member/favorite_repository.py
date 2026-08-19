@@ -8,7 +8,7 @@
 - is_favorited(db, member_id, performance_id) -> bool
 - add_favorite(db, member_id, performance_id) -> None
 - remove_favorite(db, member_id, performance_id) -> bool (삭제된 행이 있으면 True)
-- list_favorites(db, member_id, *, page, size) -> tuple[list[dict], int]
+- list_favorites(db, member_id) -> tuple[list[dict], int]
     dict 형태: {performance_id, title, thumbnail_url}
 
 [의존]
@@ -24,7 +24,7 @@
 - 썸네일은 Performance.images 관계(에서 sort_order로 정렬됨)의 첫 번째 항목을 쓴다.
 """
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domains.member.model import MemberFavorite
@@ -62,22 +62,12 @@ def remove_favorite(db: Session, member_id: int, performance_id: int) -> bool:
     return True
 
 
-def list_favorites(
-    db: Session, member_id: int, *, page: int, size: int
-) -> tuple[list[dict], int]:
-    total = db.execute(
-        select(func.count())
-        .select_from(MemberFavorite)
-        .where(MemberFavorite.member_id == member_id)
-    ).scalar_one()
-
+def list_favorites(db: Session, member_id: int) -> tuple[list[dict], int]:
     stmt = (
         select(MemberFavorite, Performance)
         .join(Performance, Performance.id == MemberFavorite.performance_id)
         .where(MemberFavorite.member_id == member_id)
         .order_by(MemberFavorite.created_at.desc())
-        .limit(size)
-        .offset(page * size)
     )
 
     items = []
@@ -91,4 +81,4 @@ def list_favorites(
             }
         )
 
-    return items, total
+    return items, len(items)

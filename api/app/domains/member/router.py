@@ -81,12 +81,10 @@ def withdraw(
 
 @router.get("/me/favorites", response_model=FavoriteListResponse)
 def list_favorites(
-    page: int = 0,
-    size: int = 20,
     member: Member = Depends(get_current_member),
     db: Session = Depends(get_db),
 ) -> FavoriteListResponse:
-    items, total = member_service.list_favorites(db, member, page=page, size=size)
+    items, total = member_service.list_favorites(db, member)
     return FavoriteListResponse(content=items, total_elements=total)
 
 

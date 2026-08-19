@@ -10,7 +10,7 @@
     일치하면 코드는 즉시 소모(삭제)한다.
 - withdraw(db, member, *, password) -> None
     비밀번호 재확인 후 status=WITHDRAWN, withdrawn_at 기록. 실제 row는 삭제하지 않는다.
-- list_favorites(db, member, *, page, size) -> tuple[list[dict], int]
+- list_favorites(db, member) -> tuple[list[dict], int]
 - add_favorite(db, member, *, performance_id) -> None
 - remove_favorite(db, member, *, performance_id) -> None
 
@@ -67,10 +67,8 @@ def withdraw(db: Session, member: Member, *, password: str) -> None:
     member_repository.withdraw_member(db, member)
 
 
-def list_favorites(
-    db: Session, member: Member, *, page: int, size: int
-) -> tuple[list[dict], int]:
-    return favorite_repository.list_favorites(db, member.id, page=page, size=size)
+def list_favorites(db: Session, member: Member) -> tuple[list[dict], int]:
+    return favorite_repository.list_favorites(db, member.id)
 
 
 def add_favorite(db: Session, member: Member, *, performance_id: int) -> None:
