@@ -5,7 +5,7 @@ const ITEMS = [
   { label: '예매 가능', bg: seatTokens.availableBg, border: seatTokens.availableBorder },
   { label: '선택중', bg: seatTokens.selectedBg, border: seatTokens.selectedBg },
   { label: '선점중', bg: seatTokens.heldBg, border: seatTokens.heldBorder },
-  { label: '판매 완료', bg: seatTokens.soldBg, border: seatTokens.soldBg },
+  { label: '예매 완료', bg: seatTokens.reservedBg, border: seatTokens.reservedBg },
 ]
 
 export function SeatLegend() {

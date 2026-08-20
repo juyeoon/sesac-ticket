@@ -18,6 +18,7 @@ import { reservationApi } from './reservationApi'
 const STATUS_LABEL: Record<string, string> = {
   PENDING_PAYMENT: '입금 대기중',
   CONFIRMED: '예매 확정',
+  CANCELLED: '예매 취소',
   EXPIRED: '기한 만료',
 }
 

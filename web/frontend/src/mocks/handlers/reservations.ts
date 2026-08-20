@@ -136,7 +136,7 @@ export const reservationHandlers = [
     }
 
     const statusMap = store.seatStatusBySchedule.get(hold.scheduleId)
-    if (statusMap) for (const id of hold.seatIds) statusMap.set(id, 'SOLD')
+    if (statusMap) for (const id of hold.seatIds) statusMap.set(id, 'RESERVED')
 
     const reservationId = store.nextReservationId++
     const paymentDueAt = Date.now() + 24 * 60 * 60 * 1000

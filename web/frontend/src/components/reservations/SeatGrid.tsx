@@ -20,7 +20,7 @@ interface SeatGridProps {
 
 function seatStyle(status: SeatStatus, isSelected: boolean) {
   if (isSelected) return { bgcolor: seatTokens.selectedBg, color: seatTokens.selectedText, border: 'none' }
-  if (status === 'SOLD') return { bgcolor: seatTokens.soldBg, color: seatTokens.soldText, border: 'none' }
+  if (status === 'RESERVED') return { bgcolor: seatTokens.reservedBg, color: seatTokens.reservedText, border: 'none' }
   if (status === 'HELD') return { bgcolor: seatTokens.heldBg, color: seatTokens.heldText, border: `1px solid ${seatTokens.heldBorder}` }
   return { bgcolor: seatTokens.availableBg, color: 'text.primary', border: `1px solid ${seatTokens.availableBorder}` }
 }

@@ -1,4 +1,5 @@
-const TTL_MS = 9 * 60 * 1000 // 서버의 entryTicket 유효기간(10분)보다 살짝 짧게 잡아서 만료 직전 재사용을 방지
+/** 서버의 entryTicket 유효기간은 실제로 5분(`_ENTRY_TICKET_TTL_SEC=300`, 하드코딩값) — 그보다 살짝 짧게 잡아서 만료 직전 재사용을 방지 */
+const TTL_MS = 4 * 60 * 1000
 
 export interface QueueContext {
   ticket: string

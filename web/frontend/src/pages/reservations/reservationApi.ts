@@ -2,7 +2,7 @@ import { api } from '../../api/client'
 
 export interface BankTransferReservation {
   reservationId: number
-  status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'EXPIRED'
+  status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'
   paymentMethod: 'BANK_TRANSFER'
   /** 실제 백엔드가 문자열 하나로 관리함(BANK_ACCOUNT_INFO 환경변수) — 구조화된 객체 아님 */
   bankAccountInfo: string

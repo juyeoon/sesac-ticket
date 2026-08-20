@@ -19,7 +19,7 @@ export function getOrInitSeatStatus(scheduleId: number) {
   for (const seat of seatMap.sections.flatMap((s) => s.seats)) {
     // 데모용 고정 시드 — 일부 좌석을 미리 판매완료/선점중으로 채워서 3가지 상태를 전부 보여준다
     let status: SeatStatus = 'AVAILABLE'
-    if (seat.seatId % 7 === 0) status = 'SOLD'
+    if (seat.seatId % 7 === 0) status = 'RESERVED'
     else if (seat.seatId % 11 === 0) status = 'HELD'
     statusMap.set(seat.seatId, status)
   }

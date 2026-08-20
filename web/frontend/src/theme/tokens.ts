@@ -49,8 +49,8 @@ export const seat = {
   heldBg: neutral.gray50,
   heldBorder: neutral.gray200,
   heldText: neutral.gray400,
-  soldBg: neutral.gray100,
-  soldText: neutral.gray300,
+  reservedBg: neutral.gray100,
+  reservedText: neutral.gray300,
 } as const
 
 export const radius = {

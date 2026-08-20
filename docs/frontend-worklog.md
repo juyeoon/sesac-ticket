@@ -70,3 +70,13 @@
 ### 문서 갱신
 - `README.md`: Phase 4 ✅로 변경(Phase 5가 다음 작업), 마이페이지 테스트 시나리오 추가, 설계 결정 표에 나이대 선택지·PATCH verificationCode mock 보정 사유 추가.
 - `frontend-handoff.md`를 Phase 5(관리자 로그인·고객센터) 기준으로 갱신 예정.
+
+### 진행 방향 확정 + `backend-decisions-followup-1_ANSWER.md` 반영
+- 사용자에게 "화면 다 만들고 API 연동할지" 물어봄 → **Phase 5(관리자 로그인, 고객센터) mock까지 마무리 후 전체 API 연동**으로 확정.
+- 그 과정에서 `backend/`를 pull해서 확인해보니 `feature/integration2`에 **admin(관리자 로그인)·support(고객센터) 도메인이 이미 실제로 구현·merge돼 있음**을 발견. 특히 member/admin 인증 둘 다 refresh token이 HttpOnly 쿠키로 구현됨(`auth/router.py`, `admin/router.py`) — 지금 프론트가 "의도적으로 단순화"해둔 부분이 실제로는 이미 풀려있던 셈. Phase 5 화면 범위도 실제 라우터 코드로 확인: 고객센터는 게시글 목록/상세 조회만 있고(문의 접수 기능 없음), 관리자 인증은 일반 회원과 완전히 분리된 쿠키 체계.
+- 사용자가 공유해준 `docs/backend-decisions-followup-1_ANSWER.md`(2차 질문 3개 답변) 반영:
+  - `/api/v1/version`의 `clientIp` 필드 — 프론트가 이미 그 이름으로 가정해뒀던 게 그대로 확정됨. 코드 변경 없음.
+  - **좌석 상태에 `SOLD`가 실제로 없음** — `AVAILABLE → HELD → RESERVED`만 존재. mock 전체(타입, 시드 로직, 핸들러, 디자인 토큰, 컴포넌트, 문서)에서 `SOLD`를 `RESERVED`로 정정. 범례 라벨도 "판매 완료"→"예매 완료"로 바꿈(RESERVED가 결제 완료가 아니라 예매 생성 시점 상태라서).
+  - **예매 상태에 `CANCELLED` 존재** — `PENDING_PAYMENT`/`CONFIRMED`/`CANCELLED`/`EXPIRED` 4가지로 타입과 라벨 맵에 추가(취소 기능 자체는 아직 화면 없음).
+  - **entryTicket 실제 TTL이 5분**(하드코딩값, `.env`엔 없음) — 프론트가 "10분일 것"이라 추측해 9분으로 캐시하고 있던 게 실제보다 길어서, 만료된 티켓으로 좌석 선점 시도해 403 나는 실제 버그가 될 뻔했음. 4분으로 정정.
+- Playwright로 좌석 선택 화면 스모트 테스트(RESERVED 좌석 렌더링/클릭 비활성화/선점 흐름) 재검증 후 제거. `npm run build`/`lint` 통과.

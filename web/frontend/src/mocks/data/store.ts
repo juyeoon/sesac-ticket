@@ -3,7 +3,8 @@
  * 브라우저 세션(탭) 동안만 유지된다.
  */
 
-export type SeatStatus = 'AVAILABLE' | 'HELD' | 'SOLD'
+/** 실제 백엔드엔 SOLD가 없음 — AVAILABLE → HELD(선점) → RESERVED(예매 생성)만 존재 (backend-decisions-followup-1_ANSWER.md 확인) */
+export type SeatStatus = 'AVAILABLE' | 'HELD' | 'RESERVED'
 
 export const QUEUE_WAIT_MS = 7000 // 데모용으로 짧게 — 실제로는 트래픽에 따라 가변
 
@@ -36,7 +37,7 @@ export interface ReservationRecord {
   scheduleId: number
   seatIds: number[]
   depositorName: string
-  status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'EXPIRED'
+  status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'
   paymentDueAt: number
   createdAt: number
 }

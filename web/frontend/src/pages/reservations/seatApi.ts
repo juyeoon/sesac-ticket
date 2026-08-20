@@ -15,7 +15,7 @@ export interface VenueSeatMap {
   sections: { sectionName: string; seats: VenueSeat[] }[]
 }
 
-export type SeatStatus = 'AVAILABLE' | 'HELD' | 'SOLD'
+export type SeatStatus = 'AVAILABLE' | 'HELD' | 'RESERVED'
 
 export interface ScheduleSeat {
   seatId: number

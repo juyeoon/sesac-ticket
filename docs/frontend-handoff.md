@@ -4,21 +4,21 @@
 
 ## 0. 가장 먼저 할 것
 
-**커밋 안 된 변경사항이 있습니다.** 이번 세션에서 Phase 4(마이페이지)를 구현한 것이 아직 안 올라갔습니다.
+**Phase 4(마이페이지) 커밋은 완료됨.** 그 직후 세션에서 `docs/backend-decisions-followup-1_ANSWER.md`(백엔드 답변)를 반영한 수정사항이 아직 안 올라갔습니다.
 
 ```bash
 git status   # 아래 파일들이 보일 것
 ```
-- `web/frontend/src/pages/mypage/` 신규 파일들 (`MyPageLayout.tsx`, `MyInfoPage.tsx`, `MyInfoEditPage.tsx`, `MyReservationsPage.tsx`, `MyFavoritesPage.tsx`, `myInfoSchemas.ts`, `reservationsApi.ts`, `userApi.ts` — `favoritesApi.ts`는 이전 세션에 이미 있던 것)
-- `web/frontend/src/routes/AppRoutes.tsx` 수정 (`/mypage`를 4개 자식 라우트를 가진 nested route로 교체)
-- `web/frontend/src/mocks/handlers/auth.ts` 수정 (`PATCH /users/me`가 `verificationCode`를 검증하도록 보정 — 실 스펙 필수 필드인데 mock이 안 지키고 있었음)
-- `web/frontend/README.md` 수정 (Phase 4 ✅, 마이페이지 테스트 시나리오·설계 결정 추가)
-- `docs/frontend-worklog.md` 수정 (이번 세션 로그 추가)
+- 좌석 상태 `SOLD` → `RESERVED`로 전면 정정 (`seatApi.ts`, `mocks/data/store.ts`, `mocks/seatStatus.ts`, `mocks/handlers/reservations.ts`, `theme/tokens.ts`의 `seat.soldBg/soldText` → `reservedBg/reservedText`, `SeatGrid.tsx`, `SeatLegend.tsx`) — 실제 백엔드엔 `SOLD` 상태 자체가 없고 `AVAILABLE → HELD → RESERVED`만 존재한다고 확인됨.
+- 예매 상태에 `CANCELLED` 추가 (`reservationApi.ts`, `mypage/reservationsApi.ts`, `ReservationConfirmPage.tsx`/`MyReservationsPage.tsx`의 `STATUS_LABEL`) — 실제 `reservation.status`엔 `PENDING_PAYMENT`/`CONFIRMED`/`CANCELLED`/`EXPIRED` 4가지가 있다고 확인됨(취소 기능 자체는 아직 화면에 없음, 타입만 대응).
+- `entryTicketStorage.ts`의 세션스토리지 캐시 TTL을 9분 → 4분으로 정정 — 실제 entryTicket TTL이 5분(`_ENTRY_TICKET_TTL_SEC=300`, 하드코딩값)으로 확인됨. **9분으로 뒀으면 캐시가 아직 유효하다고 착각한 채로 만료된 entryTicket을 좌석 선점에 써서 403이 났을 것** — 실제 버그가 될 뻔한 부분.
+- `/api/v1/version`의 `clientIp` 필드명이 프론트 가정 그대로 확정됨 — 코드 변경 없음, 관련 주석만 "확인 필요"에서 "확정됨"으로 정리.
+- `docs/frontend-worklog.md`, `web/frontend/README.md`(설계 결정 표) 갱신.
 
-`npm run build` / `npm run lint` 둘 다 이 세션 마지막에 통과 확인했고, Playwright로 로그인→마이페이지 조회/수정→실제 예매 생성→예매목록 반영→관심공연 등록/해제→비로그인 접근까지 전체 플로우를 브라우저로 재현해 콘솔 에러 0건 확인했습니다(검증 후 제거함). 커밋 메시지 예시:
+`npm run build` / `npm run lint` 통과 확인 필요 (이 수정 이후 아직 안 돌려봄 — 다음 세션에서 제일 먼저 할 것). 커밋 메시지 예시:
 ```bash
 git add docs/frontend-worklog.md web/frontend
-git commit -m "feat: implement mypage (info view/edit, reservations, favorites)"
+git commit -m "fix: align seat/reservation status enums with confirmed backend contract"
 git push origin feature/ui
 ```
 
@@ -56,21 +56,27 @@ sesac-ticket/
 6. figma/스펙과 다르게 만든 부분은 반드시 이유와 함께 flag
 7. **세션 끝날 때(또는 큰 마일스톤마다) [`frontend-worklog.md`](./frontend-worklog.md)에 로그 한 단락 추가** — 날짜, 한 일, 발견한 이슈 위주로 짧게. 이 핸드오프 문서는 "현재 상태 요약"이고, worklog는 "시간순 기록"이라 역할이 다름 — 둘 다 유지할 것.
 
-## 4. Phase 5 시작 전 확인할 것 (다음 화면 — 관리자 로그인, 고객센터)
+## 4. 진행 방향 합의 (2026-08-20, 사용자 확인)
 
-- 관리자 로그인(`/admin/login`)은 일반 사용자 헤더/푸터를 안 쓰는 별도 영역 — `AppRoutes.tsx`에서 `RootLayout` 밖에 이미 분리돼 있음. 관리자 전용 인증/권한 체계가 필요한데 백엔드 스펙 확인 안 됨(일반 `AuthContext`/`useAuth`와 같은 걸 쓸지, 별도 Context가 필요할지부터 확인).
-- 고객센터(`/support`)는 현재 `ComingSoonPage` 플레이스홀더 — 스펙 자체가 "플레이스홀더"로만 정의돼 있어서 실제 문의 접수/FAQ 기능 범위를 먼저 백엔드·기획 쪽에 확인 필요.
-- 마이페이지(Phase 4)는 완료 — 다음 세션에서 참고할 패턴: `src/pages/mypage/MyPageLayout.tsx`(서브내비 + 비로그인 안내), `MyInfoEditPage.tsx`(react-hook-form + zod + `Controller`로 MUI Select 연동, `SendCodeButton` 재사용한 인증번호 발급/검증).
+**"화면 다 만들고 나서 API 연동할지" 질문에 → Phase 5 mock까지 마무리한 뒤, 리프레시 토큰/CORS 같은 인프라 작업을 한 번에 처리하면서 전체 도메인을 Swagger 기준 실 API로 전환하는 순서로 확정.** 순서: (1) Phase 5(관리자 로그인, 고객센터) mock 구현 → (2) 화면 전체 완성 후 별도 세션(들)에서 실 API 연동 착수.
+
+`backend/`를 pull해서 실 API 연동 착수 시 참고할 것들을 미리 확인해둠:
+- **member/admin 인증 둘 다 refresh token이 HttpOnly 쿠키로 실제 구현돼 있음** (`api/app/domains/auth/router.py`, `api/app/domains/admin/router.py`) — `POST /auth/refresh`(쿠키명 `refreshToken`, path `/api/v1/auth`), `POST /admin/auth/refresh`(쿠키명 `adminRefreshToken`, path `/api/v1/admin/auth`), 둘 다 completely 분리됨. 지금 프론트의 "accessToken 메모리만 보관, refresh 없음" 단순화를 실 연동 시점에 걷어내야 함 — fetch client에 401 시 자동 재발급 인터셉터 추가 필요.
+- **크로스오리진 쿠키 이슈 주의**: 로컬 프론트(5173) ↔ 배포된 백엔드(8000) 간에 refresh 쿠키를 주고받으려면 `fetch`에 `credentials: 'include'`, 백엔드 CORS에 `allow_credentials=True` + 와일드카드 아닌 명시적 origin이 필요. 실 연동 착수 전에 백엔드 CORS 설정부터 확인.
+- **관리자 로그인 실제 스펙 확인됨**: `POST /admin/auth/login`(`{admin_id, password}` → access token + refresh 쿠키), `POST /admin/auth/refresh`. 일반 회원과 별개의 인증 체계(별도 쿠키명·경로)로 구현돼 있어서, 프론트도 `AuthContext`를 공유하지 말고 관리자 전용 Context를 새로 만드는 게 맞아 보임.
+- **고객센터 실제 스펙 확인됨**: `GET /support/posts`(목록, `page`/`size`/`category` 쿼리, 인증 불필요), `GET /support/posts/{id}`(상세, 인증 불필요) — **읽기 전용 게시글 목록/상세**이지 문의 접수(글쓰기) 기능이 아님. Phase 5 화면은 이 범위로 설계하면 됨(문의 작성 폼은 스펙에 없음).
+- 마이페이지(Phase 4)는 완료 — 참고할 패턴: `src/pages/mypage/MyPageLayout.tsx`(서브내비 + 비로그인 안내), `MyInfoEditPage.tsx`(react-hook-form + zod + `Controller`로 MUI Select 연동, `SendCodeButton` 재사용한 인증번호 발급/검증).
 
 ## 5. 아직 안 풀린 것 / 알고 있어야 할 갭
 
-- **Refresh Token 미구현**: accessToken만 메모리 보관, 새로고침하면 로그아웃됨. 의도적 단순화 — 실제 연동 시점에 쿠키 기반으로 다시 작업 필요.
+- **Refresh Token 미구현(mock)**: accessToken만 메모리 보관, 새로고침하면 로그아웃됨. 의도적 단순화 — 실제 백엔드엔 이미 쿠키 기반으로 구현돼 있음을 확인함(4번 항목 참고), 실 API 연동 시점에 프론트도 맞춰야 함.
 - **카테고리 불일치**: mock엔 콘서트/뮤지컬/연극/전시 4개, 실제 백엔드 시드엔 콘서트/뮤지컬 2개뿐. 실제 연동 시 정리 필요.
 - **좌석 등급 라벨 불일치**: mock은 "R석/S석" 등, 실제는 "R"/"S"/"VIP" (접미사 없음).
 - **좌석 선택 최대 4석 제한**: 프론트 임의 규칙, 백엔드 확인 안 됨.
 - **회차→공연 역참조 API 없음**: 좌석 선택 페이지가 라우터 state에 의존 — 새로고침하면 "다시 선택해주세요" 뜸. 백엔드에 API 추가 요청 중.
 - **나이대(`ageRange`) 선택지 임의 지정**: 스펙엔 값 목록이 없어서 프론트가 "10대/20대/30대/40대/50대 이상" 5개로 정함. 실제 연동 시 백엔드가 쓰는 값과 다르면 `MyInfoEditPage.tsx`의 `AGE_RANGE_OPTIONS` 배열만 바꾸면 됨.
-- 자세한 배경/전체 목록은 [`backend-decisions-needed.md`](./backend-decisions-needed.md)(1차, 백엔드 공유 완료, 답변 대기 중)와 [`backend-decisions-followup-1.md`](./backend-decisions-followup-1.md)(2차, 실제 서버 확인 후 추가분) 참고.
+- ~~좌석 상태 `SOLD`~~ → **`RESERVED`로 확인·수정 완료**(0번 항목), ~~entryTicket 캐시 TTL 9분~~ → **4분으로 수정 완료**, ~~`/version`의 `clientIp` 필드명~~ → **프론트 가정 그대로 확정**. 전부 `backend-decisions-followup-1_ANSWER.md`에서 답변받음.
+- 자세한 배경/전체 목록은 [`backend-decisions-needed.md`](./backend-decisions-needed.md)(1차, 답변 완료 `_answer.md`)와 [`backend-decisions-followup-1.md`](./backend-decisions-followup-1.md) + [`backend-decisions-followup-1_ANSWER.md`](./backend-decisions-followup-1_ANSWER.md)(2차, 답변 완료) 참고.
 
 ## 6. 프로젝트 배경 (알아두면 좋음)
 

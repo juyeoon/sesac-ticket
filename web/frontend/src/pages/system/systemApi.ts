@@ -7,10 +7,7 @@ export interface VersionResult {
   clientIp: string
 }
 
-/**
- * docs/backend-decisions-needed.md 4번 항목 — 실제 백엔드가 이 형태로 확정되면
- * 이 파일만 고치면 됨(화면 쪽은 손댈 필요 없음).
- */
+/** docs/backend-decisions-followup-1_ANSWER.md — 이 응답 형태(clientIp 포함) 그대로 확정됨. */
 export const systemApi = {
   version: () => api.get<VersionResult>('/version'),
 }

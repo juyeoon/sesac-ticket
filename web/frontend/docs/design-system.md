@@ -101,7 +101,7 @@ MUI 팔레트가 아니라 `tokens.ts`의 `seat` 객체를 좌석 배치도 컴�
 | 예매 가능 (AVAILABLE) | White | 보더 `blueSoft` |
 | 선택 중 (내가 선택, SELECTED) | Eerie Black | 텍스트 White |
 | 선점 중 (다른 사용자, HELD) | Gray 50 | 보더 Gray 200, 텍스트 Gray 400 |
-| 판매 완료 (SOLD) | Gray 100 | 텍스트 Gray 300 |
+| 예매 완료 (RESERVED) | Gray 100 | 텍스트 Gray 300 |
 
 ## 7. 반응형 브레이크포인트
 
