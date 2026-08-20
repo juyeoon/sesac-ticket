@@ -147,12 +147,8 @@ def get_reservation_detail(
 
 @router.get("/users/me/reservations", response_model=MyReservationListResponse)
 def list_my_reservations(
-    page: int = Query(default=0, ge=0),
-    size: int = Query(default=20, ge=1, le=100),
     status: str | None = Query(default=None),
     db: Session = Depends(get_db),
     member: Member = Depends(get_current_member),
 ) -> MyReservationListResponse:
-    return service.list_my_reservations(
-        db, member_id=member.id, page=page, size=size, status=status
-    )
+    return service.list_my_reservations(db, member_id=member.id, status=status)

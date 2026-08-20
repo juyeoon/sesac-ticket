@@ -5,7 +5,6 @@
 
 [구현할 것]
 - test_list_my_reservations_returns_own_reservations_only
-- test_list_my_reservations_paginates
 - test_list_my_reservations_filters_by_status
 - test_list_my_reservations_empty_for_no_reservations
 
@@ -93,23 +92,10 @@ def test_list_my_reservations_returns_own_reservations_only(db_session):
     _create_reservation(db_session, title="my-list-mine", member_id=90001)
     _create_reservation(db_session, title="my-list-other", member_id=90002)
 
-    result = service.list_my_reservations(db_session, member_id=90001, page=0, size=10)
+    result = service.list_my_reservations(db_session, member_id=90001)
 
     assert result.total_elements == 1
     assert result.content[0].performance_title == "my-list-mine"
-
-
-def test_list_my_reservations_paginates(db_session):
-    member_id = 90101
-    for i in range(3):
-        _create_reservation(db_session, title=f"my-list-page-{i}", member_id=member_id)
-
-    page0 = service.list_my_reservations(db_session, member_id=member_id, page=0, size=2)
-    page1 = service.list_my_reservations(db_session, member_id=member_id, page=1, size=2)
-
-    assert page0.total_elements == 3
-    assert len(page0.content) == 2
-    assert len(page1.content) == 1
 
 
 def test_list_my_reservations_filters_by_status(db_session):
@@ -119,10 +105,10 @@ def test_list_my_reservations_filters_by_status(db_session):
     service.confirm_reservation(db_session, reservation_id=confirmed.reservation_id, admin_id=99)
 
     pending_only = service.list_my_reservations(
-        db_session, member_id=member_id, page=0, size=10, status="PENDING_PAYMENT"
+        db_session, member_id=member_id, status="PENDING_PAYMENT"
     )
     confirmed_only = service.list_my_reservations(
-        db_session, member_id=member_id, page=0, size=10, status="CONFIRMED"
+        db_session, member_id=member_id, status="CONFIRMED"
     )
 
     assert pending_only.total_elements == 1
@@ -132,7 +118,7 @@ def test_list_my_reservations_filters_by_status(db_session):
 
 
 def test_list_my_reservations_empty_for_no_reservations(db_session):
-    result = service.list_my_reservations(db_session, member_id=90301, page=0, size=10)
+    result = service.list_my_reservations(db_session, member_id=90301)
 
     assert result.total_elements == 0
     assert result.content == []

@@ -11,8 +11,8 @@
 - create_reservation(db, *, member_id, hold_id, depositor_name) -> CreateReservationResponse
 - confirm_reservation(db, *, reservation_id, admin_id) -> ConfirmReservationResponse
 - get_reservation_detail(db, *, reservation_id, member_id) -> ReservationDetailResponse
-- list_my_reservations(db, *, member_id, page, size, status=None) -> MyReservationListResponse
-    반드시 writer 세션으로 호출 (복제 지연 문제 방지, 분담표 원칙).
+- list_my_reservations(db, *, member_id, status=None) -> MyReservationListResponse
+    반드시 writer 세션으로 호출 (복제 지연 문제 방지, 분담표 원칙). 페이지네이션 없음.
 
 [의존]
 - app.cache.client (get_master_client)
@@ -197,11 +197,9 @@ def get_reservation_detail(
 
 
 def list_my_reservations(
-    db: Session, *, member_id: int, page: int, size: int, status: str | None = None
+    db: Session, *, member_id: int, status: str | None = None
 ) -> MyReservationListResponse:
-    items, total = repository.list_reservations_by_member(
-        db, member_id, page=page, size=size, status=status
-    )
+    items, total = repository.list_reservations_by_member(db, member_id, status=status)
     return MyReservationListResponse(
         content=[MyReservationItem(**item) for item in items],
         total_elements=total,

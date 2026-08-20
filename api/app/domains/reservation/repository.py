@@ -23,8 +23,10 @@
 - get_bank_transfer_payment(db, reservation_id) -> BankTransferPayment | None
 - get_schedule_with_performance(db, schedule_id) -> Schedule | None
 - get_reservation_seats_detail(db, reservation_id) -> list[dict]
-- list_reservations_by_member(db, member_id, *, page, size, status=None) -> tuple[list[dict], int]
+- list_reservations_by_member(db, member_id, *, status=None) -> tuple[list[dict], int]
     RESV-007 — 반드시 writer 세션으로 호출 (복제 지연으로 방금 만든 예매가 안 보이는 문제 방지).
+    페이지네이션 없음 (프론트가 목록형 API에서 페이지네이션을 쓰지 않기로 함 —
+    member/favorite_repository.list_favorites와 동일한 결정).
 - mark_hold_expired(db, hold_log) -> None
 - get_expired_holding_holds(db, *, now) -> list[SeatHoldLog]
     hold_sweeper가 사용 — status=HOLDING이면서 expires_at이 지난 것들.
@@ -44,7 +46,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domains.payment.model import BankTransferPayment
@@ -243,15 +245,11 @@ def get_reservation_seats_detail(db: Session, reservation_id: int) -> list[dict]
 
 
 def list_reservations_by_member(
-    db: Session, member_id: int, *, page: int, size: int, status: str | None = None
+    db: Session, member_id: int, *, status: str | None = None
 ) -> tuple[list[dict], int]:
     filters = [Reservation.member_id == member_id]
     if status is not None:
         filters.append(Reservation.status == status)
-
-    total = db.execute(
-        select(func.count()).select_from(Reservation).where(*filters)
-    ).scalar_one()
 
     stmt = (
         select(Reservation, Performance.title, Schedule.perf_date)
@@ -259,8 +257,6 @@ def list_reservations_by_member(
         .join(Performance, Performance.id == Schedule.performance_id)
         .where(*filters)
         .order_by(Reservation.created_at.desc())
-        .limit(size)
-        .offset(page * size)
     )
 
     items = [
@@ -273,7 +269,7 @@ def list_reservations_by_member(
         for reservation, title, perf_date in db.execute(stmt).all()
     ]
 
-    return items, total
+    return items, len(items)
 
 
 def schedule_exists(db: Session, schedule_id: int) -> bool:
