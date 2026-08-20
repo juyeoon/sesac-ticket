@@ -3,6 +3,7 @@ import { authHandlers } from './handlers/auth'
 import { performanceHandlers } from './handlers/performances'
 import { queueHandlers } from './handlers/queue'
 import { reservationHandlers } from './handlers/reservations'
+import { systemHandlers } from './handlers/system'
 
 /**
  * 화면별 mock 핸들러를 이 배열에 추가한다.
@@ -14,4 +15,5 @@ export const handlers: HttpHandler[] = [
   ...performanceHandlers,
   ...queueHandlers,
   ...reservationHandlers,
+  ...systemHandlers,
 ]

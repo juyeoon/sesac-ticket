@@ -17,6 +17,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search'
 import { Link as RouterLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import { SystemInfoBadge } from './SystemInfoBadge'
 
 function UserMenu() {
   const { user, logout } = useAuth()
@@ -120,10 +121,14 @@ export function RootLayout() {
       </Box>
 
       <Box component="footer" sx={{ borderTop: 1, borderColor: 'divider', py: 3, mt: 4 }}>
-        <Container maxWidth="lg">
+        <Container
+          maxWidth="lg"
+          sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 0.5, justifyContent: 'space-between' }}
+        >
           <Typography variant="caption" color="text.secondary">
             © 2026 새싹티켓 · 새싹 티켓팅 프로그램 프로젝트
           </Typography>
+          <SystemInfoBadge />
         </Container>
       </Box>
     </Box>
