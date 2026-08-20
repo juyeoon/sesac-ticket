@@ -103,10 +103,14 @@ export const authHandlers = [
   http.patch(`${BASE}/users/me`, async ({ request }) => {
     const user = requireAuth(request)
     if (!user) return HttpResponse.json({ message: '인증이 필요합니다.' }, { status: 401 })
-    const body = (await request.json()) as Partial<
+    const { verificationCode, ...patch } = (await request.json()) as Partial<
       Pick<typeof user, 'nickname' | 'gender' | 'ageRange' | 'preferredGenres'>
-    >
-    Object.assign(user, body)
+    > & { verificationCode: string }
+    if (db.pendingEmailCodes.get(user.email) !== verificationCode) {
+      return HttpResponse.json({ message: '인증코드가 일치하지 않습니다.' }, { status: 400 })
+    }
+    db.pendingEmailCodes.delete(user.email)
+    Object.assign(user, patch)
     return HttpResponse.json({ updated: true })
   }),
 

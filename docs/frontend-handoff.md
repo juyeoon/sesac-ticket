@@ -4,22 +4,21 @@
 
 ## 0. 가장 먼저 할 것
 
-**커밋 안 된 변경사항이 있습니다.** 이번 세션에서 실제 배포 서버(OpenAPI 스펙)를 확인하고 mock을 고친 것 + 새 문서들이 아직 안 올라갔습니다.
+**커밋 안 된 변경사항이 있습니다.** 이번 세션에서 Phase 4(마이페이지)를 구현한 것이 아직 안 올라갔습니다.
 
 ```bash
 git status   # 아래 파일들이 보일 것
 ```
-- `web/frontend/src/**` 여러 개 수정 (category 객체화, bankAccountInfo 문자열화, status 조건부 렌더링 등 — 실제 API와 맞춘 것)
-- `web/frontend/.env.production` (신규)
-- `web/frontend/README.md` 전면 개편 (기술스택 버전, clone 시나리오 2가지, 테스트 가이드 전부 흡수)
-- `web/frontend/docs/testing-guide.md` 삭제 (README로 통합)
-- `.gitignore` 수정 (`/backend/` 추가)
-- `docs/backend-decisions-followup-1.md`, `docs/api-tree.md`, `docs/project-tree.md`, `docs/backend-decisions-needed_answer.md`, `docs/frontend-handoff.md`, `docs/frontend-worklog.md` (신규)
+- `web/frontend/src/pages/mypage/` 신규 파일들 (`MyPageLayout.tsx`, `MyInfoPage.tsx`, `MyInfoEditPage.tsx`, `MyReservationsPage.tsx`, `MyFavoritesPage.tsx`, `myInfoSchemas.ts`, `reservationsApi.ts`, `userApi.ts` — `favoritesApi.ts`는 이전 세션에 이미 있던 것)
+- `web/frontend/src/routes/AppRoutes.tsx` 수정 (`/mypage`를 4개 자식 라우트를 가진 nested route로 교체)
+- `web/frontend/src/mocks/handlers/auth.ts` 수정 (`PATCH /users/me`가 `verificationCode`를 검증하도록 보정 — 실 스펙 필수 필드인데 mock이 안 지키고 있었음)
+- `web/frontend/README.md` 수정 (Phase 4 ✅, 마이페이지 테스트 시나리오·설계 결정 추가)
+- `docs/frontend-worklog.md` 수정 (이번 세션 로그 추가)
 
-`npm run build` / `npm run lint` 둘 다 이 세션 마지막에 통과 확인했습니다. 커밋 메시지 예시:
+`npm run build` / `npm run lint` 둘 다 이 세션 마지막에 통과 확인했고, Playwright로 로그인→마이페이지 조회/수정→실제 예매 생성→예매목록 반영→관심공연 등록/해제→비로그인 접근까지 전체 플로우를 브라우저로 재현해 콘솔 에러 0건 확인했습니다(검증 후 제거함). 커밋 메시지 예시:
 ```bash
-git add .gitignore docs web/frontend
-git commit -m "fix: align frontend with real backend contract, add version/X-Forwarded-For display"
+git add docs/frontend-worklog.md web/frontend
+git commit -m "feat: implement mypage (info view/edit, reservations, favorites)"
 git push origin feature/ui
 ```
 
@@ -42,8 +41,8 @@ sesac-ticket/
 | 1 | 로그인 / 회원가입(이메일 인증) / 비밀번호 재설정 | ✅ |
 | 2 | 공연 목록·검색·카테고리 필터, 공연 상세(공유·관심공연), 회차 선택 | ✅ |
 | 3 | 대기열, 좌석 선택+Hold+타이머, 무통장입금 예매 생성/확인 | ✅ |
-| **4** | **마이페이지 (내정보 조회/수정, 내 예매 목록, 관심 공연 목록)** | **⬜ 다음 작업** |
-| 5 | 관리자 로그인, 고객센터(플레이스홀더) | ⬜ |
+| 4 | 마이페이지 (내정보 조회/수정, 내 예매 목록, 관심 공연 목록) | ✅ |
+| **5** | **관리자 로그인, 고객센터(플레이스홀더)** | **⬜ 다음 작업** |
 
 세부 스택/실행법/테스트 시나리오는 [`web/frontend/README.md`](../web/frontend/README.md) 하나로 통합됐음(`testing-guide.md`는 삭제, 내용은 README로 흡수), 디자인 규칙은 [`web/frontend/docs/design-system.md`](../web/frontend/docs/design-system.md) 참고.
 
@@ -57,12 +56,11 @@ sesac-ticket/
 6. figma/스펙과 다르게 만든 부분은 반드시 이유와 함께 flag
 7. **세션 끝날 때(또는 큰 마일스톤마다) [`frontend-worklog.md`](./frontend-worklog.md)에 로그 한 단락 추가** — 날짜, 한 일, 발견한 이슈 위주로 짧게. 이 핸드오프 문서는 "현재 상태 요약"이고, worklog는 "시간순 기록"이라 역할이 다름 — 둘 다 유지할 것.
 
-## 4. Phase 4 시작 전 확인할 것 (다음 화면)
+## 4. Phase 5 시작 전 확인할 것 (다음 화면 — 관리자 로그인, 고객센터)
 
-- `GET /users/me`, `PATCH /users/me` (닉네임/성별/나이대 수정, `verificationCode` 필요 — 실제 스펙에도 필수 필드로 확인됨)
-- `GET /users/me/reservations` (mock 핸들러 이미 만들어둠, 페이지만 없음)
-- `GET/POST/DELETE /users/me/favorites` (마찬가지로 mock 핸들러 있음, 페이지만 없음)
-- 로그인 필요 라우트라 `useRequireAuth` 패턴 그대로 적용
+- 관리자 로그인(`/admin/login`)은 일반 사용자 헤더/푸터를 안 쓰는 별도 영역 — `AppRoutes.tsx`에서 `RootLayout` 밖에 이미 분리돼 있음. 관리자 전용 인증/권한 체계가 필요한데 백엔드 스펙 확인 안 됨(일반 `AuthContext`/`useAuth`와 같은 걸 쓸지, 별도 Context가 필요할지부터 확인).
+- 고객센터(`/support`)는 현재 `ComingSoonPage` 플레이스홀더 — 스펙 자체가 "플레이스홀더"로만 정의돼 있어서 실제 문의 접수/FAQ 기능 범위를 먼저 백엔드·기획 쪽에 확인 필요.
+- 마이페이지(Phase 4)는 완료 — 다음 세션에서 참고할 패턴: `src/pages/mypage/MyPageLayout.tsx`(서브내비 + 비로그인 안내), `MyInfoEditPage.tsx`(react-hook-form + zod + `Controller`로 MUI Select 연동, `SendCodeButton` 재사용한 인증번호 발급/검증).
 
 ## 5. 아직 안 풀린 것 / 알고 있어야 할 갭
 
@@ -71,6 +69,7 @@ sesac-ticket/
 - **좌석 등급 라벨 불일치**: mock은 "R석/S석" 등, 실제는 "R"/"S"/"VIP" (접미사 없음).
 - **좌석 선택 최대 4석 제한**: 프론트 임의 규칙, 백엔드 확인 안 됨.
 - **회차→공연 역참조 API 없음**: 좌석 선택 페이지가 라우터 state에 의존 — 새로고침하면 "다시 선택해주세요" 뜸. 백엔드에 API 추가 요청 중.
+- **나이대(`ageRange`) 선택지 임의 지정**: 스펙엔 값 목록이 없어서 프론트가 "10대/20대/30대/40대/50대 이상" 5개로 정함. 실제 연동 시 백엔드가 쓰는 값과 다르면 `MyInfoEditPage.tsx`의 `AGE_RANGE_OPTIONS` 배열만 바꾸면 됨.
 - 자세한 배경/전체 목록은 [`backend-decisions-needed.md`](./backend-decisions-needed.md)(1차, 백엔드 공유 완료, 답변 대기 중)와 [`backend-decisions-followup-1.md`](./backend-decisions-followup-1.md)(2차, 실제 서버 확인 후 추가분) 참고.
 
 ## 6. 프로젝트 배경 (알아두면 좋음)

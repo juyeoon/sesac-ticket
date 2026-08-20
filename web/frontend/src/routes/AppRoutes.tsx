@@ -13,6 +13,11 @@ import QueuePage from '../pages/queue/QueuePage'
 import SeatSelectPage from '../pages/reservations/SeatSelectPage'
 import BankTransferFormPage from '../pages/reservations/BankTransferFormPage'
 import ReservationConfirmPage from '../pages/reservations/ReservationConfirmPage'
+import MyPageLayout from '../pages/mypage/MyPageLayout'
+import MyInfoPage from '../pages/mypage/MyInfoPage'
+import MyInfoEditPage from '../pages/mypage/MyInfoEditPage'
+import MyReservationsPage from '../pages/mypage/MyReservationsPage'
+import MyFavoritesPage from '../pages/mypage/MyFavoritesPage'
 
 /**
  * 전체 라우트 표. 아직 만들지 않은 화면은 ComingSoonPage로 채워두고,
@@ -41,10 +46,12 @@ export function AppRoutes() {
         <Route path="/reservations/bank-transfer/:reservationId" element={<ReservationConfirmPage />} />
 
         {/* Phase 4 — 마이페이지 */}
-        <Route path="/mypage" element={<ComingSoonPage title="내 정보" />} />
-        <Route path="/mypage/edit" element={<ComingSoonPage title="내 정보 수정" />} />
-        <Route path="/mypage/reservations" element={<ComingSoonPage title="내 예매 목록" />} />
-        <Route path="/mypage/favorites" element={<ComingSoonPage title="관심 공연" />} />
+        <Route path="/mypage" element={<MyPageLayout />}>
+          <Route index element={<MyInfoPage />} />
+          <Route path="edit" element={<MyInfoEditPage />} />
+          <Route path="reservations" element={<MyReservationsPage />} />
+          <Route path="favorites" element={<MyFavoritesPage />} />
+        </Route>
 
         {/* Phase 5 — 기타 */}
         <Route path="/support" element={<ComingSoonPage title="고객센터" />} />

@@ -47,3 +47,26 @@
 
 ### 커밋 상태
 세션 종료 시점 기준 다수 변경사항이 **아직 커밋되지 않음** — `frontend-handoff.md`의 "가장 먼저 할 것" 섹션에 커밋 대상과 명령어 정리해둠.
+
+---
+
+## 2026-08-20 (2차 세션 — Phase 4 마이페이지)
+
+### 커밋
+- 이전 세션에서 안 올라갔던 변경사항(`fix: align frontend with real backend contract, ...`) 먼저 커밋·푸시 완료.
+
+### Phase 4 구현 (마이페이지)
+- `src/pages/mypage/`에 `MyPageLayout`(공통 서브내비 + 비로그인 시 안내 화면), `MyInfoPage`(조회), `MyInfoEditPage`(수정), `MyReservationsPage`, `MyFavoritesPage` 추가. `AppRoutes.tsx`에서 `/mypage`를 4개 자식 라우트를 가진 nested route로 교체.
+- `userApi.ts`(PATCH), `reservationsApi.ts`(GET 목록) 신규 — `favoritesApi.ts`는 이전 세션에 이미 있던 것 재사용.
+- **mock 핸들러 보정**: `PATCH /users/me`가 `verificationCode`를 아예 검증 안 하고 있던 걸 발견 — 회원가입과 동일하게 `db.pendingEmailCodes`로 실제 검증하도록 고침. 실 백엔드가 이 필드를 필수로 요구한다고 이미 확인된 상태라(`frontend-handoff.md`), mock만 느슨하면 나중에 실 서버 연동 시 폼이 갑자기 400 받는 걸 방지하려는 목적.
+- 나이대(`ageRange`) 선택지는 스펙에 값 목록이 없어서 "10대~50대 이상" 5개로 임의 지정 — `README.md` 설계 결정 표에 flag 해둠.
+- 관심 공연 목록은 `GET /users/me/favorites`가 ID 배열만 주기 때문에 `performanceApi.list()`와 프론트에서 교차 매칭.
+
+### Playwright로 전체 플로우 검증 (완료 후 제거)
+- 로그인 → 마이페이지 조회 → 정보수정(인증번호 발급/검증 포함) → **실제 예매 생성 전체 플로우**(공연상세→회차선택→대기열→좌석선점→무통장입금) → 내 예매 목록에 반영 확인 → 관심공연 등록/해제 → 비로그인 상태에서 `/mypage` 직접 접근 시 안내 화면까지 전부 브라우저로 재현, 콘솔 에러 0건.
+- 테스트 스크립트 작성 중 한 번 "즐겨찾기가 목록에 안 보임"으로 실패했었는데, 원인은 코드 버그가 아니라 테스트가 `page.goto()`로 하드 네비게이션을 해서 세션(accessToken, 메모리 보관)이 날아간 것 — 오히려 "새로고침하면 로그아웃됨" 설계가 의도대로 동작함을 확인해준 케이스. 이후 클릭 기반 네비게이션으로 수정.
+- 검증 끝나고 `npm uninstall playwright` + 임시 스크립트 삭제로 원복.
+
+### 문서 갱신
+- `README.md`: Phase 4 ✅로 변경(Phase 5가 다음 작업), 마이페이지 테스트 시나리오 추가, 설계 결정 표에 나이대 선택지·PATCH verificationCode mock 보정 사유 추가.
+- `frontend-handoff.md`를 Phase 5(관리자 로그인·고객센터) 기준으로 갱신 예정.
