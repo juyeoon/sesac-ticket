@@ -6,10 +6,16 @@ from app.domains.performance import service
 from app.domains.performance.schema import (
     PerformanceDetailResponse,
     PerformanceListEnvelope,
+    ScheduleDetailResponse,
     ScheduleResponse,
 )
 
 router = APIRouter(prefix="/performances", tags=["performance"])
+
+# scheduleId 하나로 소속 공연/공연장을 역참조하는 엔드포인트라 /performances 아래가
+# 아니라 /schedules 아래에 위치한다 (reservation 라우터의 /schedules/{id}/seats와
+# 같은 리소스 계층). api/v1.py에서 performance_router와 별도로 등록한다.
+schedule_router = APIRouter(prefix="/schedules", tags=["performance"])
 
 
 @router.get(
@@ -59,3 +65,20 @@ def get_performance_schedules(
     db: Session = Depends(get_read_db),
 ):
     return service.get_schedules(db, performance_id)
+
+
+@schedule_router.get(
+    "/{schedule_id}",
+    response_model=ScheduleDetailResponse,
+    summary="회차 단건 조회 (공연/공연장 역참조)",
+    description=(
+        "scheduleId만으로 소속 performanceId/venueId 및 회차 정보를 조회한다. "
+        "좌석 선택 화면을 새로고침하거나 링크로 직접 진입했을 때 venueId를 "
+        "다시 구할 수 있게 하기 위한 API (프론트Q-백엔드-답변.md #1)."
+    ),
+)
+def get_schedule_detail(
+    schedule_id: int,
+    db: Session = Depends(get_read_db),
+):
+    return service.get_schedule_detail(db, schedule_id)

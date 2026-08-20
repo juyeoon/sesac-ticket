@@ -85,3 +85,14 @@ class ScheduleResponse(CamelModel):
     id: int
     start_at: datetime
     sale_status: str
+
+
+class ScheduleDetailResponse(CamelModel):
+    schedule_id: int
+    performance_id: int
+    performance_title: str
+    venue_id: int
+    venue_name: str
+    date: date
+    time: time
+    seat_grades: list[SeatGradeAvailability]

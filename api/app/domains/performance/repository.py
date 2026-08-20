@@ -56,3 +56,12 @@ def list_schedules(db, performance_id):
         .order_by(Schedule.perf_date, Schedule.perf_time)
     )
     return list(db.scalars(stmt).unique().all())
+
+
+def get_schedule_by_id(db, schedule_id):
+    stmt = (
+        select(Schedule)
+        .where(Schedule.id == schedule_id)
+        .options(joinedload(Schedule.performance).joinedload(Performance.venue))
+    )
+    return db.scalars(stmt).unique().one_or_none()

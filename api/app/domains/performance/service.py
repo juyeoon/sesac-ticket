@@ -12,6 +12,7 @@ from app.domains.performance.schema import (
     PerformanceListEnvelope,
     PerformanceSummary,
     PriceRange,
+    ScheduleDetailResponse,
     ScheduleResponse,
     ScheduleSummary,
     SeatGradeAvailability,
@@ -146,6 +147,24 @@ def get_performance_detail(db, performance_id):
             )
             for img in performance.images
         ],
+    )
+
+
+def get_schedule_detail(db, schedule_id):
+    schedule = repository.get_schedule_by_id(db, schedule_id)
+    if schedule is None:
+        raise AppException(ErrorCode.PERF_SCHEDULE_NOT_FOUND)
+
+    performance = schedule.performance
+    return ScheduleDetailResponse(
+        schedule_id=schedule.id,
+        performance_id=performance.id,
+        performance_title=performance.title,
+        venue_id=performance.venue.id,
+        venue_name=performance.venue.name,
+        date=schedule.perf_date,
+        time=schedule.perf_time,
+        seat_grades=_seat_grade_availability(db, schedule.id),
     )
 
 
