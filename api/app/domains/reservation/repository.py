@@ -21,6 +21,10 @@
     reservation/reservation_seat/bank_transfer_payment를 한 트랜잭션으로 INSERT (RESV-004).
 - get_reservation_by_id(db, reservation_id) -> Reservation | None
 - get_bank_transfer_payment(db, reservation_id) -> BankTransferPayment | None
+- get_expired_pending_reservations(db, *, now) -> list[Reservation]
+    reservation_sweeper가 사용 — status=PENDING_PAYMENT이면서 payment_due_at이 지난 것들.
+- get_reservation_seat_ids(db, reservation_id) -> list[int]
+- mark_reservation_expired(db, reservation) -> None
 - get_schedule_with_performance(db, schedule_id) -> Schedule | None
 - get_reservation_seats_detail(db, reservation_id) -> list[dict]
 - list_reservations_by_member(db, member_id, *, status=None) -> tuple[list[dict], int]
@@ -205,6 +209,31 @@ def get_bank_transfer_payment(db: Session, reservation_id: int) -> BankTransferP
         BankTransferPayment.reservation_id == reservation_id
     )
     return db.execute(stmt).scalar_one_or_none()
+
+
+def get_expired_pending_reservations(db: Session, *, now: datetime) -> list[Reservation]:
+    stmt = (
+        select(Reservation)
+        .join(BankTransferPayment, BankTransferPayment.reservation_id == Reservation.id)
+        .where(
+            Reservation.status == "PENDING_PAYMENT",
+            BankTransferPayment.payment_due_at < now,
+        )
+    )
+    return list(db.execute(stmt).scalars().all())
+
+
+def get_reservation_seat_ids(db: Session, reservation_id: int) -> list[int]:
+    stmt = select(ReservationSeat.schedule_seat_id).where(
+        ReservationSeat.reservation_id == reservation_id
+    )
+    return [row[0] for row in db.execute(stmt).all()]
+
+
+def mark_reservation_expired(db: Session, reservation: Reservation) -> None:
+    reservation.status = "EXPIRED"
+    reservation.cancelled_at = datetime.now()
+    db.commit()
 
 
 def get_schedule_with_performance(db: Session, schedule_id: int) -> Schedule | None:

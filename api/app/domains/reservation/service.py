@@ -10,6 +10,9 @@
     Hold 생성/해제 시 캐시를 무효화해 다음 조회에서 최신 상태로 재구성되게 한다.
 - create_reservation(db, *, member_id, hold_id, depositor_name) -> CreateReservationResponse
 - confirm_reservation(db, *, reservation_id, admin_id) -> ConfirmReservationResponse
+- expire_reservation(db, reservation) -> None
+    reservation_sweeper 전용. 입금기한(payment_due_at)이 지난 PENDING_PAYMENT 예매를
+    EXPIRED로 전환 + 좌석 AVAILABLE 복구 + 좌석상태 캐시 무효화.
 - get_reservation_detail(db, *, reservation_id, member_id) -> ReservationDetailResponse
 - list_my_reservations(db, *, member_id, status=None) -> MyReservationListResponse
     반드시 writer 세션으로 호출 (복제 지연 문제 방지, 분담표 원칙). 페이지네이션 없음.
@@ -50,6 +53,7 @@ from app.cache.keys import seat_status as seat_status_key
 from app.core.config import get_settings
 from app.core.exceptions import AppException, ErrorCode
 from app.domains.reservation import repository
+from app.domains.reservation.model import Reservation
 from app.domains.reservation.schema import (
     ConfirmReservationResponse,
     CreateReservationResponse,
@@ -164,6 +168,13 @@ def confirm_reservation(
         status=reservation.status,
         confirmed_at=confirmed_at,
     )
+
+
+def expire_reservation(db: Session, reservation: Reservation) -> None:
+    seat_ids = repository.get_reservation_seat_ids(db, reservation.id)
+    repository.mark_seats_available(db, seat_ids)
+    repository.mark_reservation_expired(db, reservation)
+    invalidate_seat_status_cache(reservation.schedule_id)
 
 
 def get_reservation_detail(

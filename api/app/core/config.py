@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     bank_transfer_payment_due_hours: int = 24  # 무통장입금 입금 기한(시간)
     bank_account_info: str = "국민은행 123456-78-901234 (예금주: 새싹티켓)"
     hold_sweep_interval_sec: int = 10  # hold_sweeper 워커 폴링 주기
+    reservation_sweep_interval_sec: int = 60  # reservation_sweeper(입금기한 만료) 워커 폴링 주기
 
     # --- 대기열 ---
     queue_enabled: bool = True
