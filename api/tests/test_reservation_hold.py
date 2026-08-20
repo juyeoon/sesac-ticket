@@ -5,6 +5,7 @@
 
 [구현할 것]
 - test_create_hold_success
+- test_create_hold_fails_when_seat_count_exceeds_limit
 - test_create_hold_fails_for_missing_seat
 - test_create_hold_fails_for_already_held_seat
 - test_create_hold_requires_entry_ticket_when_queue_enabled
@@ -108,6 +109,21 @@ def test_create_hold_success(db_session):
 
     seats = repository.get_seats_for_hold(db_session, schedule_id=schedule_id, seat_ids=seat_ids[:2])
     assert all(s.status == "HELD" for s in seats)
+
+
+def test_create_hold_fails_when_seat_count_exceeds_limit(db_session):
+    schedule_id, seat_ids = _create_schedule_with_seats(db_session, title="hold-over-limit")
+
+    with pytest.raises(AppException) as exc_info:
+        hold_service.create_hold(
+            db_session,
+            member_id=1,
+            schedule_id=schedule_id,
+            seat_ids=seat_ids,  # 3개 — MAX_SEATS_PER_HOLD(기본 2) 초과
+            entry_ticket=None,
+        )
+    assert exc_info.value.error_code == ErrorCode.RESV_SEAT_LIMIT_EXCEEDED
+    assert exc_info.value.status_code == 400
     # 선점 안 한 세 번째 좌석은 그대로 AVAILABLE
     remaining_seat = repository.get_seats_for_hold(
         db_session, schedule_id=schedule_id, seat_ids=[seat_ids[2]]
@@ -116,7 +132,10 @@ def test_create_hold_success(db_session):
 
 
 def test_create_hold_fails_for_missing_seat(db_session):
-    schedule_id, seat_ids = _create_schedule_with_seats(db_session, title="hold-missing")
+    # seat_count=1로 제한: 실좌석 1개 + 존재하지 않는 좌석 1개 = 2개로
+    # MAX_SEATS_PER_HOLD(기본 2) 안에 맞춰서, 이 테스트가 검증하려는 "좌석없음" 케이스가
+    # 좌석수 제한 케이스보다 먼저 걸리지 않게 한다.
+    schedule_id, seat_ids = _create_schedule_with_seats(db_session, title="hold-missing", seat_count=1)
 
     with pytest.raises(AppException) as exc_info:
         hold_service.create_hold(

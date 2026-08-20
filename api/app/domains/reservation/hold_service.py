@@ -28,6 +28,9 @@
   DB의 최신 상태로 다시 채워지게 하기 위함.
 - Lua 스크립트(hold_seats.lua/release_seats.lua)가 최종 원자성을 보장하지만,
   그 전에 DB에서 좌석이 실제 존재하고 AVAILABLE인지 먼저 확인한다 (빠른 실패).
+- create_hold는 요청 좌석 수가 MAX_SEATS_PER_HOLD(기본 2)를 넘으면 다른 검증보다
+  먼저 RESV_SEAT_LIMIT_EXCEEDED(400)로 거절한다 — DB 스키마 변경 없이 API 레벨
+  검증만으로 처리 (프론트Q-백엔드-답변.md #5 결정).
 - Hold 세션 정보는 Valkey `seat:hold:{holdId}`에 JSON으로 저장하고 TTL을 건다
   (밸키 키 설계서 규격). get_hold()는 이 캐시를 우선 사용해 DB 왕복 없이 빠르게
   응답한다 — 없으면(만료/미존재) 404.
@@ -86,6 +89,10 @@ def create_hold(
     seat_ids: list[int],
     entry_ticket: str | None,
 ) -> HoldResult:
+    settings = get_settings()
+    if len(seat_ids) > settings.max_seats_per_hold:
+        raise AppException(ErrorCode.RESV_SEAT_LIMIT_EXCEEDED)
+
     verify_entry_ticket_value(entry_ticket, member_id)
 
     seats = repository.get_seats_for_hold(db, schedule_id=schedule_id, seat_ids=seat_ids)
@@ -94,7 +101,6 @@ def create_hold(
     if any(seat.status != "AVAILABLE" for seat in seats):
         raise AppException(ErrorCode.RESV_SEAT_ALREADY_HELD)
 
-    settings = get_settings()
     hold_id = uuid.uuid4().hex
     lock_keys = [seat_lock(sid) for sid in seat_ids]
 

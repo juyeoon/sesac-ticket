@@ -48,6 +48,7 @@ class Settings(BaseSettings):
 
     # --- 예매 ---
     hold_ttl_sec: int = 300
+    max_seats_per_hold: int = 2  # 1인당 1회 선점 최대 좌석 수 (프론트Q-백엔드-답변.md #5)
     seat_status_cache_ttl_sec: int = 5  # 좌석 상태 조회(RESV-002) 캐시 TTL
     bank_transfer_payment_due_hours: int = 24  # 무통장입금 입금 기한(시간)
     bank_account_info: str = "국민은행 123456-78-901234 (예금주: 새싹티켓)"
