@@ -1,11 +1,19 @@
-import { Box, Button, Container, Stack, Typography } from '@mui/material'
+import { Box, Button, CircularProgress, Container, Stack, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { CenteredMessagePage } from '../../components/common/CenteredMessagePage'
 import { useAdminAuth } from '../../admin/AdminAuthContext'
 
 export default function AdminHomePage() {
-  const { adminId, isAdminAuthenticated, logout } = useAdminAuth()
+  const { adminId, isAdminAuthenticated, isInitializing, logout } = useAdminAuth()
   const navigate = useNavigate()
+
+  if (isInitializing) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
 
   if (!isAdminAuthenticated) {
     return (
@@ -25,7 +33,7 @@ export default function AdminHomePage() {
         <Typography variant="overline" color="text.secondary">
           관리자
         </Typography>
-        <Typography variant="h3">{adminId}님 환영합니다</Typography>
+        <Typography variant="h3">{adminId ? `${adminId}님 환영합니다` : '관리자님 환영합니다'}</Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
           관리자 대시보드는 다음 단계에서 채워질 예정입니다.
         </Typography>

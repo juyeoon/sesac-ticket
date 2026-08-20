@@ -4,7 +4,6 @@ import { Box, Chip, CircularProgress, Container, Stack, Typography } from '@mui/
 import { useSearchParams } from 'react-router-dom'
 import { PerformanceCard } from '../../components/performances/PerformanceCard'
 import { performanceApi } from './performanceApi'
-import { CATEGORIES } from '../../mocks/data/performances'
 
 export default function PerformanceListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -16,11 +15,18 @@ export default function PerformanceListPage() {
     queryFn: () => (keyword ? performanceApi.search(keyword) : performanceApi.list()),
   })
 
+  const content = useMemo(() => data?.content ?? [], [data])
+
+  // 카테고리 목록을 조회하는 별도 API가 없어서, 지금 불러온 목록에 실제로 존재하는 값으로 구성한다.
+  const categories = useMemo(
+    () => Array.from(new Set(content.map((p) => p.category.name))),
+    [content],
+  )
+
   const filtered = useMemo(() => {
-    const content = data?.content ?? []
     if (category === '전체') return content
     return content.filter((p) => p.category.name === category)
-  }, [data, category])
+  }, [content, category])
 
   const handleCategoryClick = (next: string) => {
     const params = new URLSearchParams(searchParams)
@@ -39,7 +45,7 @@ export default function PerformanceListPage() {
       </Typography>
 
       <Stack direction="row" spacing={1} sx={{ mb: 4, flexWrap: 'wrap', rowGap: 1 }}>
-        {['전체', ...CATEGORIES].map((c) => (
+        {['전체', ...categories].map((c) => (
           <Chip
             key={c}
             label={c}

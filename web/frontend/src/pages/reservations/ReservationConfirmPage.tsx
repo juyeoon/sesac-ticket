@@ -68,8 +68,8 @@ export default function ReservationConfirmPage() {
             </Typography>
           )}
           <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-            {data.seats.map((s) => (
-              <Chip key={s.seatId} size="small" label={`${s.grade ?? ''} ${s.row ?? ''}열 ${s.number ?? ''}번`} />
+            {data.seats.map((s, i) => (
+              <Chip key={i} size="small" label={`${s.grade} ${s.row}열 ${s.number}번 · ${s.price.toLocaleString()}원`} />
             ))}
           </Stack>
         </CardContent>
@@ -82,7 +82,6 @@ export default function ReservationConfirmPage() {
           </Typography>
           <Stack spacing={1.25}>
             <InfoRow label="입금 계좌" value={data.bankAccountInfo} />
-            <InfoRow label="입금자명" value={data.depositorName} />
             <Divider />
             <InfoRow label="입금 기한" value={dayjs(data.paymentDueAt).format('YYYY.MM.DD HH:mm')} emphasize />
           </Stack>

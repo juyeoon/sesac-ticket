@@ -3,7 +3,7 @@ import { api } from '../../api/client'
 export interface VenueSeat {
   seatId: number
   section: string
-  row: number
+  row: string
   number: number
   x: number
   y: number
@@ -20,7 +20,7 @@ export type SeatStatus = 'AVAILABLE' | 'HELD' | 'RESERVED'
 export interface ScheduleSeat {
   seatId: number
   section: string
-  row: number
+  row: string
   number: number
   grade: string
   status: SeatStatus

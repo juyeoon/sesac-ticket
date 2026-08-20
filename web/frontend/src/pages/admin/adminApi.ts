@@ -1,4 +1,4 @@
-import { api } from '../../api/client'
+import { adminApiClient } from '../../api/adminClient'
 
 export interface AdminAccessTokenResult {
   accessToken: string
@@ -8,5 +8,5 @@ export interface AdminAccessTokenResult {
 
 export const adminApi = {
   login: (adminId: string, password: string) =>
-    api.post<AdminAccessTokenResult>('/admin/auth/login', { adminId, password }),
+    adminApiClient.post<AdminAccessTokenResult>('/admin/auth/login', { adminId, password }),
 }

@@ -30,7 +30,8 @@ export function PerformanceCard({ performance }: { performance: PerformanceListI
           {performance.title}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {performance.venue.name} · {performance.dateFrom} ~ {performance.dateTo}
+          {performance.venue.name}
+          {performance.dateFrom && performance.dateTo && ` · ${performance.dateFrom} ~ ${performance.dateTo}`}
         </Typography>
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', color: 'text.primary' }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>

@@ -7,7 +7,7 @@ export interface QueueEnterResult {
 }
 
 export interface QueueStatusResult {
-  status: 'WAITING' | 'READY'
+  status: string
   position: number
   estimatedWaitSeconds: number
   entryTicket: string | null

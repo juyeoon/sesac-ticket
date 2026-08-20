@@ -2,10 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { Box, Card, CardContent, Chip, CircularProgress, Container, Pagination, Stack, Typography } from '@mui/material'
 import dayjs from 'dayjs'
 import { Link as RouterLink, useSearchParams } from 'react-router-dom'
-import { SUPPORT_CATEGORIES } from '../../mocks/data/support'
 import { supportApi } from './supportApi'
 
 const PAGE_SIZE = 6
+
+/** 카테고리 목록을 조회하는 별도 API가 없어서 프론트가 임의로 정한 값 — 운영 게시글의 실제 카테고리로 교체할 것 */
+const SUPPORT_CATEGORIES = ['공지', '이용안내', '자주묻는질문']
 
 export default function SupportListPage() {
   const [searchParams, setSearchParams] = useSearchParams()

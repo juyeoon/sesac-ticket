@@ -19,29 +19,21 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 })
 
-async function enableMocking() {
-  if (import.meta.env.PROD) return
-  const { worker } = await import('./mocks/browser')
-  return worker.start({ onUnhandledRequest: 'bypass' })
-}
-
-enableMocking().then(() => {
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <AuthProvider>
-              <LoginGateProvider>
-                <AdminAuthProvider>
-                  <App />
-                </AdminAuthProvider>
-              </LoginGateProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </QueryClientProvider>
-      </ThemeProvider>
-    </StrictMode>,
-  )
-})
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <LoginGateProvider>
+              <AdminAuthProvider>
+                <App />
+              </AdminAuthProvider>
+            </LoginGateProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ThemeProvider>
+  </StrictMode>,
+)

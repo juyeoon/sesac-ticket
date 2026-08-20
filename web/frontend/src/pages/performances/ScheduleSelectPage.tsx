@@ -24,14 +24,13 @@ export default function ScheduleSelectPage() {
   const id = Number(performanceId)
   const navigate = useNavigate()
 
-  const { data: performance } = useQuery({
+  const { data: performance, isLoading } = useQuery({
     queryKey: ['performance', id],
     queryFn: () => performanceApi.detail(id),
   })
-  const { data: schedules, isLoading } = useQuery({
-    queryKey: ['schedules', id],
-    queryFn: () => performanceApi.schedules(id),
-  })
+  // 회차 목록은 공연 상세 응답에 이미 seatGrades까지 포함돼 내려온다 — 별도 회차 목록 API는
+  // 등급/가격 정보 없이 상태값만 주는 다른 용도라 여기선 쓰지 않는다.
+  const schedules = performance?.schedules
 
   const grouped = useMemo(() => {
     const map = new Map<string, Schedule[]>()

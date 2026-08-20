@@ -1,9 +1,12 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { refreshAdminAccessToken, setAdminAccessToken } from '../api/adminClient'
 import { adminApi } from '../pages/admin/adminApi'
 
 interface AdminAuthContextValue {
+  /** 새로고침 후 refreshToken으로 복원된 세션은 실제 백엔드에 admin "whoami" API가 없어 null로 남는다 */
   adminId: string | null
   isAdminAuthenticated: boolean
+  isInitializing: boolean
   login: (adminId: string, password: string) => Promise<void>
   logout: () => void
 }
@@ -16,16 +19,40 @@ const AdminAuthContext = createContext<AdminAuthContextValue | null>(null)
  */
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [adminId, setAdminId] = useState<string | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(true)
 
   const login = useCallback(async (id: string, password: string) => {
-    await adminApi.login(id, password)
+    const { accessToken } = await adminApi.login(id, password)
+    setAdminAccessToken(accessToken)
     setAdminId(id)
+    setIsAuthenticated(true)
   }, [])
 
-  const logout = useCallback(() => setAdminId(null), [])
+  const logout = useCallback(() => {
+    setAdminAccessToken(null)
+    setAdminId(null)
+    setIsAuthenticated(false)
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const restored = await refreshAdminAccessToken()
+      if (!cancelled) {
+        setIsAuthenticated(restored)
+        setIsInitializing(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
-    <AdminAuthContext.Provider value={{ adminId, isAdminAuthenticated: !!adminId, login, logout }}>
+    <AdminAuthContext.Provider
+      value={{ adminId, isAdminAuthenticated: isAuthenticated, isInitializing, login, logout }}
+    >
       {children}
     </AdminAuthContext.Provider>
   )

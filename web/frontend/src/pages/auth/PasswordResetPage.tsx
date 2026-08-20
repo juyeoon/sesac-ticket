@@ -28,7 +28,7 @@ export default function PasswordResetPage() {
   const onSubmit = async (values: PasswordResetFormValues) => {
     setFormError(null)
     try {
-      // mock 환경: 이메일로 받은 인증번호를 resetToken으로 그대로 사용
+      // 실제로는 6자리 코드가 아니라 이메일로 발송되는 긴 재설정 토큰(resetToken)을 그대로 붙여넣는 필드
       await authApi.resetPassword(values.verificationCode, values.newPassword)
       navigate('/login', { replace: true })
     } catch (err) {
@@ -52,8 +52,8 @@ export default function PasswordResetPage() {
 
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'flex-start' }}>
           <TextField
-            label="인증번호"
-            placeholder="이메일로 전송된 인증 코드를 입력해주세요"
+            label="재설정 토큰"
+            placeholder="이메일로 전송된 재설정 토큰을 붙여넣어주세요"
             fullWidth
             {...register('verificationCode')}
             error={!!errors.verificationCode}
@@ -69,7 +69,7 @@ export default function PasswordResetPage() {
         </Stack>
         {codeSent && (
           <Alert severity="success" variant="outlined">
-            인증번호를 전송했어요. (개발 중에는 브라우저 콘솔에서 코드를 확인할 수 있어요)
+            재설정 토큰을 이메일로 전송했어요.
           </Alert>
         )}
 

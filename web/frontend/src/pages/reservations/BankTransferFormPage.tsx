@@ -32,7 +32,7 @@ interface LocationState {
   performanceId: number
   performanceTitle: string
   scheduleId: number
-  seats: { seatId: number; grade: string; row: number; number: number }[]
+  seats: { seatId: number; grade: string; row: string; number: number }[]
   totalPrice: number
 }
 

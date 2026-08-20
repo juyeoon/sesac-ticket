@@ -17,7 +17,6 @@ export type LoginFormValues = z.infer<typeof loginSchema>
 export const signupSchema = z
   .object({
     email: emailField,
-    verificationCode: z.string().min(1, '이메일로 전송된 인증 코드를 입력해주세요.'),
     nickname: z.string().min(2, '2자 이상 입력해주세요.').max(20, '20자 이하로 입력해주세요.'),
     password: passwordField,
     passwordConfirm: z.string(),

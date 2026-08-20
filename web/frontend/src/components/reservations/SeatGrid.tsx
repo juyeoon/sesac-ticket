@@ -6,7 +6,7 @@ export interface MergedSeat {
   seatId: number
   x: number
   y: number
-  row: number
+  row: string
   number: number
   grade: string
   status: SeatStatus

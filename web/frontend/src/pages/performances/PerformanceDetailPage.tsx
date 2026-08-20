@@ -22,8 +22,8 @@ import { useRequireAuth } from '../../auth/useRequireAuth'
 import { performanceApi } from './performanceApi'
 import { favoritesApi } from '../mypage/favoritesApi'
 
-function formatDate(iso: string) {
-  return dayjs(iso).format('YYYY.MM.DD')
+function formatDate(iso: string | null | undefined) {
+  return iso ? dayjs(iso).format('YYYY.MM.DD') : '미정'
 }
 
 export default function PerformanceDetailPage() {
@@ -47,7 +47,7 @@ export default function PerformanceDetailPage() {
     queryFn: favoritesApi.list,
     enabled: isAuthenticated,
   })
-  const isFavorited = favorites?.content.includes(id) ?? false
+  const isFavorited = favorites?.content.some((f) => f.performanceId === id) ?? false
 
   const favoriteMutation = useMutation({
     mutationFn: async (): Promise<{ favorited: boolean }> =>
@@ -55,18 +55,17 @@ export default function PerformanceDetailPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['favorites'] }),
   })
 
-  const shareMutation = useMutation({
-    mutationFn: () => performanceApi.shareLink(id),
-    onSuccess: async ({ shareUrl: url }) => {
-      setShareUrl(url)
-      setShareOpen(true)
-      try {
-        await navigator.clipboard.writeText(url)
-      } catch {
-        // 클립보드 권한이 없어도 다이얼로그에서 다시 복사할 수 있으니 무시
-      }
-    },
-  })
+  // 실 백엔드엔 공유 링크 발급 API가 없음(share-link 엔드포인트 자체가 스펙에 없다고 확인됨) — 현재 페이지 URL을 그대로 공유 링크로 쓴다.
+  const handleShare = async () => {
+    const url = window.location.href
+    setShareUrl(url)
+    setShareOpen(true)
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      // 클립보드 권한이 없어도 다이얼로그에서 다시 복사할 수 있으니 무시
+    }
+  }
 
   if (isLoading) return null
   if (isError || !data) {
@@ -105,12 +104,12 @@ export default function PerformanceDetailPage() {
               label="가격"
               value={`${data.priceInfo.minPrice.toLocaleString()}원 ~ ${data.priceInfo.maxPrice.toLocaleString()}원`}
             />
-            <InfoRow label="관람 시간" value={`${data.runningTimeMin}분`} />
-            <InfoRow label="관람 연령" value={data.ageLimit} />
+            <InfoRow label="관람 시간" value={data.runningTimeMin ? `${data.runningTimeMin}분` : '미정'} />
+            <InfoRow label="관람 연령" value={data.ageLimit ?? '미정'} />
           </Stack>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3, whiteSpace: 'pre-line' }}>
-            {data.description}
+            {data.description ?? ''}
           </Typography>
 
           <Stack direction="row" spacing={1.5}>
@@ -125,7 +124,7 @@ export default function PerformanceDetailPage() {
               variant="outlined"
               size="large"
               startIcon={<ShareOutlinedIcon />}
-              onClick={() => shareMutation.mutate()}
+              onClick={handleShare}
             >
               공유하기
             </Button>

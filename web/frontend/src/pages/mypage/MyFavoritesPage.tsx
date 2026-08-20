@@ -1,23 +1,16 @@
-import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Box, Card, CardContent, CircularProgress, IconButton, Stack, Typography } from '@mui/material'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import { Link as RouterLink } from 'react-router-dom'
 import { PlaceholderImage } from '../../components/common/PlaceholderImage'
-import { StatusBadge } from '../../components/performances/StatusBadge'
-import { performanceApi, type PerformanceListItem } from '../performances/performanceApi'
 import { favoritesApi } from './favoritesApi'
 
 export default function MyFavoritesPage() {
   const queryClient = useQueryClient()
 
-  const { data: favorites, isLoading: favoritesLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['favorites'],
     queryFn: favoritesApi.list,
-  })
-  const { data: performances, isLoading: performancesLoading } = useQuery({
-    queryKey: ['performances', ''],
-    queryFn: () => performanceApi.list(),
   })
 
   const removeMutation = useMutation({
@@ -25,19 +18,15 @@ export default function MyFavoritesPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['favorites'] }),
   })
 
-  const favorited: PerformanceListItem[] = useMemo(() => {
-    if (!favorites || !performances) return []
-    const idSet = new Set(favorites.content)
-    return performances.content.filter((p) => idSet.has(p.id))
-  }, [favorites, performances])
-
-  if (favoritesLoading || performancesLoading) {
+  if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
         <CircularProgress />
       </Box>
     )
   }
+
+  const favorited = data?.content ?? []
 
   if (favorited.length === 0) {
     return (
@@ -56,14 +45,14 @@ export default function MyFavoritesPage() {
       }}
     >
       {favorited.map((p) => (
-        <Card key={p.id} sx={{ height: '100%' }}>
+        <Card key={p.performanceId} sx={{ height: '100%' }}>
           <Box sx={{ p: 1.5, pb: 0, position: 'relative' }}>
-            <Box component={RouterLink} to={`/performances/${p.id}`} sx={{ display: 'block' }}>
+            <Box component={RouterLink} to={`/performances/${p.performanceId}`} sx={{ display: 'block' }}>
               <PlaceholderImage aspectRatio="4 / 3" />
             </Box>
             <IconButton
               size="small"
-              onClick={() => removeMutation.mutate(p.id)}
+              onClick={() => removeMutation.mutate(p.performanceId)}
               disabled={removeMutation.isPending}
               sx={{ position: 'absolute', top: 20, right: 20, bgcolor: 'background.paper', border: 1, borderColor: 'grey.200' }}
               aria-label="관심 공연 해제"
@@ -71,16 +60,10 @@ export default function MyFavoritesPage() {
               <FavoriteIcon color="error" fontSize="small" />
             </IconButton>
           </Box>
-          <CardContent component={RouterLink} to={`/performances/${p.id}`} sx={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
-            <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-              <StatusBadge status={p.status} />
+          <CardContent component={RouterLink} to={`/performances/${p.performanceId}`} sx={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+            <Stack direction="row" spacing={1}>
+              <Typography variant="h6">{p.title}</Typography>
             </Stack>
-            <Typography variant="h6" sx={{ mb: 0.5 }}>
-              {p.title}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {p.venue.name} · {p.dateFrom} ~ {p.dateTo}
-            </Typography>
           </CardContent>
         </Card>
       ))}

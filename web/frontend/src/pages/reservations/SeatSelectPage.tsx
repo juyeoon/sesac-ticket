@@ -22,7 +22,7 @@ import { queueApi } from '../queue/queueApi'
 import { getValidQueueContext, type QueueContext } from '../queue/entryTicketStorage'
 import { useHoldCountdown, formatCountdown } from './useHoldCountdown'
 
-const MAX_SEATS = 4
+const MAX_SEATS = 2
 
 interface LocationState {
   performanceId?: number
@@ -38,37 +38,68 @@ export default function SeatSelectPage() {
   const queryClient = useQueryClient()
   const locState = (location.state as LocationState | null) ?? null
 
-  const [context, setContext] = useState<QueueContext | null | 'checking'>('checking')
+  const [context, setContext] = useState<QueueContext | 'checking'>('checking')
   const [selectedSeatIds, setSelectedSeatIds] = useState<number[]>([])
   const [holdId, setHoldId] = useState<string | null>(null)
   const [limitAlertOpen, setLimitAlertOpen] = useState(false)
+  const [recoverFailed, setRecoverFailed] = useState(false)
+
+  interface QueueEntryVars {
+    performanceId: number
+    performanceTitle: string
+    venueId: number
+  }
 
   const enterQueueMutation = useMutation({
-    mutationFn: () => queueApi.enter(locState!.performanceId!, scheduleId),
-    onSuccess: (res) => {
+    mutationFn: (vars: QueueEntryVars) => queueApi.enter(vars.performanceId, scheduleId),
+    onSuccess: (res, vars) => {
       navigate(`/queue/${res.queueToken}`, {
         replace: true,
         state: {
           scheduleId,
-          performanceId: locState!.performanceId,
-          performanceTitle: locState!.performanceTitle ?? '',
-          venueId: locState!.venueId,
+          performanceId: vars.performanceId,
+          performanceTitle: vars.performanceTitle,
+          venueId: vars.venueId,
         },
       })
     },
   })
 
   useEffect(() => {
-    const cached = getValidQueueContext(scheduleId)
-    if (cached) {
-      setContext(cached)
-      return
+    let cancelled = false
+
+    async function init() {
+      const cached = getValidQueueContext(scheduleId)
+      if (cached) {
+        setContext(cached)
+        return
+      }
+      if (locState?.performanceId && locState.venueId) {
+        enterQueueMutation.mutate({
+          performanceId: locState.performanceId,
+          performanceTitle: locState.performanceTitle ?? '',
+          venueId: locState.venueId,
+        })
+        return
+      }
+      // 새로고침 등으로 라우터 state가 사라진 경우, 회차→공연 역참조 API로 복구해서 대기열에 새로 진입한다.
+      try {
+        const backref = await performanceApi.scheduleBackref(scheduleId)
+        if (cancelled) return
+        enterQueueMutation.mutate({
+          performanceId: backref.performanceId,
+          performanceTitle: backref.performanceTitle,
+          venueId: backref.venueId,
+        })
+      } catch {
+        if (!cancelled) setRecoverFailed(true)
+      }
     }
-    if (locState?.performanceId && locState.venueId) {
-      enterQueueMutation.mutate()
-      return
+
+    init()
+    return () => {
+      cancelled = true
     }
-    setContext(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduleId])
 
@@ -161,12 +192,12 @@ export default function SeatSelectPage() {
     })
   }
 
-  if (context === null) {
+  if (recoverFailed) {
     return (
       <CenteredMessagePage
         eyebrow="좌석 선택"
         title="다시 선택해주세요"
-        description="공연 상세 페이지에서 회차를 다시 선택하면 좌석을 고를 수 있어요."
+        description="회차 정보를 찾을 수 없어요. 공연 상세 페이지에서 회차를 다시 선택해주세요."
       />
     )
   }

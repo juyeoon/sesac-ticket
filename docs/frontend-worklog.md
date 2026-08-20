@@ -88,3 +88,39 @@
 - Phase 5가 마지막 `ComingSoonPage` 소비처였어서, 라우팅 교체 후 완전히 죽은 코드가 된 `ComingSoonPage.tsx`를 삭제.
 - Playwright로 고객센터(카테고리 필터/페이지네이션/상세 이동) + 관리자 로그인(오답/정답/새로고침 시 세션 초기화/로그아웃) 전체 플로우 검증 후 제거. `npm run build`/`lint` 통과.
 - **Phase 0~5 전체 화면 구현이 이걸로 끝** — README/handoff 문서를 "다음 단계는 신규 화면이 아니라 Swagger 기준 실 API 연동"으로 갱신.
+
+### 백엔드 완성 확인 + 브랜치 정리 + 로컬 폴더 rename
+- 사용자가 "백엔드 작업 끝났다"고 확인 → 전체 GitHub 브랜치를 다시 점검함. `main`은 여전히 초기 커밋뿐이라 아직 아무것도 merge 안 됐고, `feature/integration2`가 실질적인 백엔드 완성 브랜치임을 확인(다른 feature 브랜치 — auth/core/db/performance-info/reservation/support/backend-skeleton — 전부 `feature/integration2`에 merge 완료, 안 합쳐진 커밋 0개).
+- `api/`(당시 `backend/`)에서 `git pull`해서 새로 들어온 커밋 확인, 프론트에 영향 있는 것 발견:
+  - `MAX_SEATS_PER_HOLD=2`로 확정(`.env.example`) — 지금 프론트는 4석 기준(`SeatSelectPage.tsx`)이라 실 연동 시 수정 필요. "회차 → 공연 역참조 API 없음" 갭도 `GET /schedules/{scheduleId}` 신규 추가로 해결됨.
+  - `reservation_sweeper` 워커(입금기한 만료 자동 처리), `GET /version` 필드는 이전에 확인한 형태와 일치.
+- **로컬 폴더 `backend/` → `api/`로 rename**: `feature/integration2` 브랜치의 실제 최상위 구조가 `api/` 하나뿐이라, 나중에 `main`에 병합됐을 때의 최종 구조(`web/frontend/` + `api/` + `docs/`)와 로컬 경로를 일치시키려고 이름을 맞춤. `.gitignore`의 `/backend/`도 `/api/`로 수정, README·handoff 문서의 경로 참조 전부 갱신(worklog 과거 기록은 시점 기록이라 그대로 둠).
+- **다음 지침 추가**: 프론트(`feature/ui`) 작업이 다 끝나면 `feature/integration3` 브랜치를 새로 만들어서 `feature/integration2`까지 진행된 백엔드와 merge해 통합 테스트하기로 함(사용자 지침, 지금 당장 할 일은 아님) — `frontend-handoff.md` 5번 섹션에 정리.
+- 로컬 API 연동 테스트 환경 확인 중: 예전에 살아있던 배포 서버(`43.201.61.179:8000`)가 이번엔 타임아웃으로 접속 안 됨. 로컬 실행 대안 확인 — Docker(29.6.1)는 설치돼 있으나 Docker Desktop 꺼져있음, `uv`는 설치돼 있어 Python 버전 문제는 없음. `docker-compose.yml`이 리포에 없어서 MySQL/Valkey를 직접 `docker run`으로 띄워야 함.
+- 사용자가 `docs/토근 복구되면 할 것.md`(디자인 개선 — `docs/ui_ref/` 레퍼런스 이미지 기반, 컬러 팔레트 고정·좌석 배치도 개선 등)를 다음 작업으로 예고함 — 지금 진행 중인 API 연동이 끝난 뒤에 착수할 것.
+
+### 실 API 연동 (Phase 6) — MSW mock 완전 제거
+사용자가 "mock/real 어떻게 전환할지" 물어봄 → **완전히 실 API로 전환**하기로 결정. 이후 로컬 백엔드 환경 구축부터 프론트 코드 전면 정합화까지 한 세션에 진행.
+
+**로컬 백엔드 환경 구축**: Docker Desktop 실행 → MySQL 8 + Valkey 컨테이너 기동 → 스키마 적용(`sesac_ticket_init.sql`을 `docker exec -i`로 흘려보냄, 로컬에 mysql 클라이언트 없어도 됨) → `.env` 생성(JWT_SECRET은 새로 랜덤 생성, 팀 공유 시크릿 절대 안 씀) → `uv sync` → `admin_seed.py`/`perf_seed.py` 실행 → `uvicorn` 기동. `/version`, `/performances`, `/admin/auth/login`, `/support/posts`를 curl로 직접 확인해서 mock이 가정했던 형태와 일치함을 확인.
+
+**MSW 완전 제거**: `src/mocks/` 폴더, `msw` 패키지, `public/mockServiceWorker.js` 전부 삭제. `main.tsx`의 `enableMocking()` 제거. mock 데이터 폴더에서 실제 화면이 쓰던 상수 2개(`CATEGORIES`, `SUPPORT_CATEGORIES`)는 미리 다른 곳으로 옮겨서(공연 카테고리는 아예 실 데이터에서 동적으로 뽑도록 개선) 삭제 시 안 깨지게 함. `vite.config.ts`에 `/api/v1` → `:8000` proxy 추가 — 브라우저 입장에서 같은 오리진이 되어 refreshToken 쿠키 왕복에 CORS 설정이 불필요해짐(운영에서도 nginx가 같은 구조).
+
+**리프레시 토큰 실제 구현**: `api/client.ts`(회원)에 401 시 `/auth/refresh` 쿠키로 자동 재발급하는 인터셉터 추가. `api/adminClient.ts`(관리자, 신규 파일)로 완전히 분리된 클라이언트 구성 — 실 백엔드도 `refreshToken`/`adminRefreshToken` 쿠키를 이름·경로부터 분리해서 관리하길래 그대로 따라감. `AuthContext`/`AdminAuthContext`가 앱 시작 시 refreshToken으로 로그인 상태를 복원하도록 수정 — **"새로고침하면 로그아웃"이라는, mock 단계 내내 있었던 의도적 단순화가 이걸로 완전히 해소됨.** 관리자는 whoami API가 없어서 복원 후 관리자 ID 표시는 못 하고 일반화된 문구로 대체.
+
+**OpenAPI 스펙(`/openapi.json`)을 직접 떠서 프론트 타입 전수 검증** — Postman/문서 대신 실행 중인 서버의 스키마를 신뢰. 발견한 불일치를 전부 코드에 반영:
+- 좌석 최대 선택 수 4 → 2 (`MAX_SEATS_PER_HOLD=2` 확정), 좌석 상태 `SOLD` 완전 제거(`RESERVED`만 존재 — 이전 세션에 답변받은 내용을 최종 코드에도 반영)
+- `GET /schedules/{scheduleId}` 역참조 API로 좌석 선택 화면의 "새로고침하면 다시 선택해주세요" 제약을 실제로 없앰(대기열 새로 진입하도록 개선)
+- `GET /performances/{id}/schedules`가 가격 정보 없는 별개 스키마라는 걸 발견 → 공연 상세 응답에 이미 포함된 `schedules` 필드를 대신 쓰도록 `ScheduleSelectPage.tsx` 수정(API 호출도 하나 줄임)
+- 관심 공연 목록이 ID 배열이 아니라 `{performanceId,title,thumbnailUrl}[]` → `MyFavoritesPage.tsx`를 그 실제 형태에 맞게 단순화(성능/venue 교차조회 로직 제거)
+- 예매 상세 좌석 항목에 `seatId` 없음(`section/row/number/grade/price`만), `depositorName` 필드 자체가 응답에 없음 → `ReservationConfirmPage.tsx`에서 해당 UI 제거하고 가격 표시 추가
+- 공유 링크 발급 API가 아예 존재하지 않음을 확인 → `PerformanceDetailPage.tsx`에서 API 호출을 없애고 현재 페이지 URL을 그대로 공유하도록 변경
+- 좌석 `row` 필드가 문자열임(숫자 아님) — 관련 타입 전부 수정
+
+**회원가입 이메일 인증 흐름이 근본적으로 잘못 설계돼 있었던 걸 발견**: 실제로 Playwright로 회원가입을 테스트하다가 인증코드를 어디서도 못 찾아서 원인을 추적함 → `POST /auth/email/verify-request`가 **이미 가입된 회원에게만** 코드를 발급하는 걸 서비스 코드에서 직접 확인(가입 안 한 이메일이면 조용히 무시). 즉 "가입 전 이메일 인증"이라는 mock 단계의 플로우 자체가 실 계약상 불가능한 설계였음 — `SignupPage.tsx`에서 인증 단계를 통째로 제거하고 바로 회원가입하도록 수정. login도 `email_verified`를 확인하지 않는다는 것도 함께 확인. 이메일 인증 API 자체는 마이페이지 정보수정(이미 회원인 상태)에서는 정상적으로 필요해서 그대로 유지.
+
+**부수 발견**: SMTP 미설정 시 인증코드/재설정토큰을 로그로 남기게 설계돼 있는데(`app/core/mailer.py`), 로컬 uvicorn 기본 로깅 설정이 이 로그를 가로채서 어디에도 안 남는 문제를 확인 — 테스트 시엔 Valkey에서 직접 조회(`auth:email-verify:{email}`, `auth:password-reset:{token}` 키 패턴)하는 방식으로 우회.
+
+**미해결 환경 버그(백엔드 팀 확인 필요)**: `redis-py==8.1.0` + `protocol=2` 조합에서 `ZPOPMIN`만 Valkey 7.2로부터 `unknown command` 응답을 받는 걸 재현 확인(ZADD/ZRANGE 등 다른 zset 명령은 정상). 이 명령이 대기열 dispatcher의 핵심이라 로컬에서 대기열이 영원히 WAITING에 머묾 — 대기열 통과 이후(좌석선택~예매확인) 플로우는 코드는 고쳤지만 로컬에서 실행 검증은 못 함. `frontend-handoff.md` 3번 섹션에 재현 방법과 함께 남겨둠.
+
+`npm run build`/`lint` 통과. Playwright로 회원가입(실 백엔드, 인증 없음)/로그인/새로고침 후 세션 유지/동적 카테고리/관심공연/마이페이지 정보수정(Valkey에서 코드 조회)/관리자 로그인(`admin01`/`test1234!`)/고객센터 빈 상태까지 확인 후 제거. 대기열 이후 플로우는 위 버그로 미검증. 세션 종료 시 Docker 컨테이너·백엔드·워커 전부 정지(데이터는 보존, 재시드 불필요).
