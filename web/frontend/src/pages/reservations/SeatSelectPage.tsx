@@ -18,6 +18,7 @@ import { SeatLegend } from '../../components/reservations/SeatLegend'
 import { SeatGradeLegend } from '../../components/reservations/SeatGradeLegend'
 import { buildGradeColorMap, getGradeColor } from '../../components/reservations/gradeColor'
 import { CenteredMessagePage } from '../../components/common/CenteredMessagePage'
+import { PlaceholderImage } from '../../components/common/PlaceholderImage'
 import { seatApi } from './seatApi'
 import { performanceApi } from '../performances/performanceApi'
 import { queueApi } from '../queue/queueApi'
@@ -216,25 +217,37 @@ export default function SeatSelectPage() {
 
   return (
     <Container maxWidth="md" sx={{ py: 5, pb: 16 }}>
-      <Typography variant="overline" color="text.secondary">
-        좌석 선택
-      </Typography>
-      <Typography variant="h3" sx={{ mb: 3 }}>
-        {performance?.title ?? context.performanceTitle}
-      </Typography>
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 4 }}>
+        <Box sx={{ width: 64, flexShrink: 0 }}>
+          <PlaceholderImage seed={String(context.performanceId)} aspectRatio="1 / 1" />
+        </Box>
+        <Box>
+          <Typography variant="overline" color="text.secondary">
+            좌석 선택
+          </Typography>
+          <Typography variant="h4">{performance?.title ?? context.performanceTitle}</Typography>
+          {performance && (
+            <Typography variant="body2" color="text.secondary">
+              {performance.venue.name}
+            </Typography>
+          )}
+        </Box>
+      </Stack>
 
       <Stack spacing={1.5} sx={{ mb: 3 }}>
         <SeatGradeLegend seatGrades={performance?.seatGrades ?? []} gradeColors={gradeColors} />
         <SeatLegend />
       </Stack>
 
-      {mergedSeats.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <SeatGrid seats={mergedSeats} selectedSeatIds={selectedSeatIds} onToggle={toggleSeat} gradeColors={gradeColors} />
-      )}
+      <Box sx={{ p: { xs: 1.5, sm: 3 }, borderRadius: '20px', border: 1, borderColor: 'grey.100' }}>
+        {mergedSeats.length === 0 ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <SeatGrid seats={mergedSeats} selectedSeatIds={selectedSeatIds} onToggle={toggleSeat} gradeColors={gradeColors} />
+        )}
+      </Box>
 
       <Paper
         sx={{
@@ -245,6 +258,7 @@ export default function SeatSelectPage() {
           borderRadius: 0,
           borderTop: 1,
           borderColor: 'divider',
+          boxShadow: '0 -8px 24px -12px rgba(33,33,33,0.18)',
           py: 2,
         }}
         elevation={0}

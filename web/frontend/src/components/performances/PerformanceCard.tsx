@@ -16,12 +16,16 @@ export function PerformanceCard({ performance }: { performance: PerformanceListI
         textDecoration: 'none',
         color: 'inherit',
         height: '100%',
-        transition: 'border-color 0.15s ease',
-        '&:hover': { borderColor: 'text.primary' },
+        transition: 'border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease',
+        '&:hover': {
+          borderColor: 'text.primary',
+          boxShadow: '0 12px 24px -12px rgba(33,33,33,0.28)',
+          transform: 'translateY(-2px)',
+        },
       }}
     >
       <Box sx={{ p: 1.5, pb: 0 }}>
-        <PlaceholderImage aspectRatio="4 / 3" />
+        <PlaceholderImage aspectRatio="4 / 3" seed={String(performance.id)} />
       </Box>
       <CardContent>
         <Stack direction="row" spacing={1} sx={{ mb: 1 }}>

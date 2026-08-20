@@ -84,8 +84,8 @@ export default function SupportListPage() {
               display: 'block',
               textDecoration: 'none',
               color: 'inherit',
-              transition: 'border-color 0.15s ease',
-              '&:hover': { borderColor: 'text.primary' },
+              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+              '&:hover': { borderColor: 'text.primary', boxShadow: '0 8px 20px -14px rgba(33,33,33,0.3)' },
             }}
           >
             <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>

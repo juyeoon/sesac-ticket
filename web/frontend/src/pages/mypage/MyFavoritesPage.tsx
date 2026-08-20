@@ -48,7 +48,7 @@ export default function MyFavoritesPage() {
         <Card key={p.performanceId} sx={{ height: '100%' }}>
           <Box sx={{ p: 1.5, pb: 0, position: 'relative' }}>
             <Box component={RouterLink} to={`/performances/${p.performanceId}`} sx={{ display: 'block' }}>
-              <PlaceholderImage aspectRatio="4 / 3" />
+              <PlaceholderImage aspectRatio="4 / 3" seed={String(p.performanceId)} />
             </Box>
             <IconButton
               size="small"

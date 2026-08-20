@@ -3,6 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Box,
   Button,
+  Card,
+  CardContent,
+  Chip,
   Container,
   Divider,
   IconButton,
@@ -15,7 +18,6 @@ import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined'
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
-import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
 import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined'
 import Diversity3OutlinedIcon from '@mui/icons-material/Diversity3Outlined'
 import type { SvgIconComponent } from '@mui/icons-material'
@@ -83,80 +85,114 @@ export default function PerformanceDetailPage() {
     )
   }
 
+  const seed = String(data.id)
+
   return (
-    <Container maxWidth="md" sx={{ py: 5 }}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={4}>
-        <Box sx={{ width: { xs: '100%', sm: 280 }, flexShrink: 0 }}>
-          <PlaceholderImage aspectRatio="3 / 4" iconSize={56} />
-        </Box>
-
-        <Box sx={{ flex: 1 }}>
-          {data.status && (
-            <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
-              <StatusBadge status={data.status} />
+    <Box>
+      {/* 히어로 배너 — 포스터 아트를 배경으로 깔고 어두운 그러데이션 위에 타이틀을 얹는다 */}
+      <Box sx={{ position: 'relative', height: { xs: 280, sm: 360 }, overflow: 'hidden' }}>
+        <PlaceholderImage seed={seed} fill />
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(to top, rgba(20,18,24,0.82) 0%, rgba(20,18,24,0.25) 55%, rgba(20,18,24,0) 100%)',
+          }}
+        />
+        <Container maxWidth="lg" sx={{ position: 'relative', height: '100%' }}>
+          <Stack sx={{ position: 'absolute', left: { xs: 16, sm: 24 }, right: 16, bottom: 24 }} spacing={1.5}>
+            <Stack direction="row" spacing={1}>
+              {data.status && <StatusBadge status={data.status} />}
+              <Chip size="small" label={data.category.name} sx={{ bgcolor: 'rgba(255,255,255,0.16)', color: 'white' }} />
             </Stack>
-          )}
-          <Typography variant="h2" sx={{ mb: 3 }}>
-            {data.title}
-          </Typography>
-
-          <Stack
-            spacing={1.5}
-            sx={{ mb: 3, p: 2.5, borderRadius: '20px', border: 1, borderColor: 'grey.100' }}
-          >
-            <InfoRow icon={CategoryOutlinedIcon} label="공연 종류" value={data.category.name} />
-            <InfoRow icon={PlaceOutlinedIcon} label="공연장" value={`${data.venue.name} (${data.venue.address ?? '주소 미정'})`} />
-            <InfoRow
-              icon={EventOutlinedIcon}
-              label="예매 기간"
-              value={`${formatDate(data.ticketOpenAt)} - ${formatDate(data.ticketCloseAt)}`}
-            />
-            <InfoRow
-              icon={PaidOutlinedIcon}
-              label="가격"
-              value={`${data.priceInfo.minPrice.toLocaleString()}원 ~ ${data.priceInfo.maxPrice.toLocaleString()}원`}
-            />
-            <InfoRow icon={AccessTimeOutlinedIcon} label="관람 시간" value={data.runningTimeMin ? `${data.runningTimeMin}분` : '미정'} />
-            <InfoRow icon={Diversity3OutlinedIcon} label="관람 연령" value={data.ageLimit ?? '미정'} />
+            <Typography variant="h2" sx={{ color: 'white', textShadow: '0 2px 12px rgba(0,0,0,0.35)' }}>
+              {data.title}
+            </Typography>
           </Stack>
+        </Container>
+      </Box>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3, whiteSpace: 'pre-line' }}>
-            {data.description ?? ''}
-          </Typography>
+      <Container maxWidth="lg" sx={{ py: 5 }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={4}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Stack spacing={1.5} sx={{ mb: 4, p: 2.5, borderRadius: '20px', border: 1, borderColor: 'grey.100' }}>
+              <InfoRow icon={CategoryOutlinedIcon} label="공연 종류" value={data.category.name} />
+              <InfoRow icon={PlaceOutlinedIcon} label="공연장" value={`${data.venue.name} (${data.venue.address ?? '주소 미정'})`} />
+              <InfoRow
+                icon={EventOutlinedIcon}
+                label="예매 기간"
+                value={`${formatDate(data.ticketOpenAt)} - ${formatDate(data.ticketCloseAt)}`}
+              />
+              <InfoRow icon={AccessTimeOutlinedIcon} label="관람 시간" value={data.runningTimeMin ? `${data.runningTimeMin}분` : '미정'} />
+              <InfoRow icon={Diversity3OutlinedIcon} label="관람 연령" value={data.ageLimit ?? '미정'} />
+            </Stack>
 
-          <Stack direction="row" spacing={1.5}>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={() => requireAuth(() => navigate(`/performances/${id}/schedules`))}
-            >
-              예매하기
-            </Button>
-            <Button
-              variant="outlined"
-              size="large"
-              startIcon={<ShareOutlinedIcon />}
-              onClick={handleShare}
-            >
-              공유하기
-            </Button>
-            <IconButton
-              onClick={() => requireAuth(() => favoriteMutation.mutate())}
-              sx={{ border: 1, borderColor: 'grey.200' }}
-              aria-label={isFavorited ? '관심 공연 해제' : '관심 공연 등록'}
-            >
-              {isFavorited ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
-            </IconButton>
-          </Stack>
-        </Box>
-      </Stack>
+            <Typography variant="h5" sx={{ mb: 2 }}>
+              공연 소개
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4, whiteSpace: 'pre-line' }}>
+              {data.description || '공연 소개가 아직 등록되지 않았어요.'}
+            </Typography>
 
-      <Divider sx={{ my: 5 }} />
+            <Divider sx={{ mb: 3 }} />
+            <PlaceholderImage seed={`${seed}-poster`} aspectRatio="21 / 9" />
+          </Box>
 
-      <PlaceholderImage aspectRatio="16 / 9" iconSize={56} />
+          {/* 예매 요약 카드 — 데스크톱에선 스크롤해도 따라오는 사이드 패널 */}
+          <Box sx={{ width: { xs: '100%', md: 320 }, flexShrink: 0 }}>
+            <Card sx={{ position: { md: 'sticky' }, top: { md: 96 } }}>
+              <CardContent>
+                <Typography variant="overline" color="text.secondary">
+                  가격
+                </Typography>
+                <Typography variant="h4" sx={{ mb: 2 }}>
+                  {data.priceInfo.minPrice.toLocaleString()}
+                  <Typography component="span" variant="body1" color="text.secondary">
+                    원 ~ {data.priceInfo.maxPrice.toLocaleString()}원
+                  </Typography>
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <Stack spacing={1.5} sx={{ mb: 3 }}>
+                  {data.seatGrades.map((g) => (
+                    <Stack key={g.grade} direction="row" sx={{ justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {g.grade}석
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {g.price.toLocaleString()}원
+                      </Typography>
+                    </Stack>
+                  ))}
+                </Stack>
+                <Button
+                  variant="contained"
+                  size="large"
+                  fullWidth
+                  sx={{ mb: 1.5 }}
+                  onClick={() => requireAuth(() => navigate(`/performances/${id}/schedules`))}
+                >
+                  예매하기
+                </Button>
+                <Stack direction="row" spacing={1.5}>
+                  <Button variant="outlined" fullWidth startIcon={<ShareOutlinedIcon />} onClick={handleShare}>
+                    공유하기
+                  </Button>
+                  <IconButton
+                    onClick={() => requireAuth(() => favoriteMutation.mutate())}
+                    sx={{ border: 1, borderColor: 'grey.200', borderRadius: '999px' }}
+                    aria-label={isFavorited ? '관심 공연 해제' : '관심 공연 등록'}
+                  >
+                    {isFavorited ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
+                  </IconButton>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Box>
+        </Stack>
+      </Container>
 
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} shareUrl={shareUrl} />
-    </Container>
+    </Box>
   )
 }
 
