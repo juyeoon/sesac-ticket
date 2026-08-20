@@ -5,9 +5,17 @@ interface CenteredMessagePageProps {
   eyebrow: string
   title: string
   description: string
+  ctaHref?: string
+  ctaLabel?: string
 }
 
-export function CenteredMessagePage({ eyebrow, title, description }: CenteredMessagePageProps) {
+export function CenteredMessagePage({
+  eyebrow,
+  title,
+  description,
+  ctaHref = '/',
+  ctaLabel = '홈으로 가기',
+}: CenteredMessagePageProps) {
   return (
     <Container maxWidth="sm">
       <Box
@@ -28,8 +36,8 @@ export function CenteredMessagePage({ eyebrow, title, description }: CenteredMes
         <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
           {description}
         </Typography>
-        <Button component={RouterLink} to="/" variant="contained" size="large">
-          홈으로 가기
+        <Button component={RouterLink} to={ctaHref} variant="contained" size="large">
+          {ctaLabel}
         </Button>
       </Box>
     </Container>

@@ -80,3 +80,11 @@
   - **예매 상태에 `CANCELLED` 존재** — `PENDING_PAYMENT`/`CONFIRMED`/`CANCELLED`/`EXPIRED` 4가지로 타입과 라벨 맵에 추가(취소 기능 자체는 아직 화면 없음).
   - **entryTicket 실제 TTL이 5분**(하드코딩값, `.env`엔 없음) — 프론트가 "10분일 것"이라 추측해 9분으로 캐시하고 있던 게 실제보다 길어서, 만료된 티켓으로 좌석 선점 시도해 403 나는 실제 버그가 될 뻔했음. 4분으로 정정.
 - Playwright로 좌석 선택 화면 스모트 테스트(RESERVED 좌석 렌더링/클릭 비활성화/선점 흐름) 재검증 후 제거. `npm run build`/`lint` 통과.
+
+### Phase 5 구현 (관리자 로그인, 고객센터) — 화면 커버리지 100% 달성
+- **고객센터**(`src/pages/support/`): `GET /support/posts`(카테고리 필터 + 페이지네이션), `GET /support/posts/{id}` mock 구현. 실제 백엔드 라우터/스키마/테스트 코드(`backend/api/app/domains/support/`)를 직접 읽어서 확인한 결과 **읽기 전용 게시판**(문의 작성 기능 없음)이라는 걸 알게 됨 — 화면 범위를 그에 맞게 잡음. 카테고리 값(`공지/이용안내/자주묻는질문`)과 페이지 크기(6)는 스펙에 없어서 프론트가 임의로 정함.
+- **관리자 로그인**(`src/pages/admin/`, `src/admin/AdminAuthContext.tsx`): 일반 회원 `AuthContext`와 완전히 분리된 별도 Context로 구현 — 실 백엔드도 admin을 별도 테이블 + 별도 refresh 쿠키(`adminRefreshToken`)로 분리해서 관리하길래 그 구조를 따라감. 로그인 성공 후 보여줄 실제 대시보드가 없어서(백엔드에 관리 기능 API 자체가 아직 없음) 환영 문구 + 로그아웃 버튼만 있는 placeholder(`AdminHomePage`)로 마무리.
+- 재사용을 위해 `CenteredMessagePage`에 `ctaHref`/`ctaLabel` optional prop 추가(기존 호출부는 기본값이 그대로라 영향 없음) — 관리자 비로그인 안내 화면만 "홈으로"가 아니라 "관리자 로그인으로" 보내야 해서.
+- Phase 5가 마지막 `ComingSoonPage` 소비처였어서, 라우팅 교체 후 완전히 죽은 코드가 된 `ComingSoonPage.tsx`를 삭제.
+- Playwright로 고객센터(카테고리 필터/페이지네이션/상세 이동) + 관리자 로그인(오답/정답/새로고침 시 세션 초기화/로그아웃) 전체 플로우 검증 후 제거. `npm run build`/`lint` 통과.
+- **Phase 0~5 전체 화면 구현이 이걸로 끝** — README/handoff 문서를 "다음 단계는 신규 화면이 아니라 Swagger 기준 실 API 연동"으로 갱신.

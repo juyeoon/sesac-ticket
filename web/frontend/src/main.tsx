@@ -13,6 +13,7 @@ import App from './App.tsx'
 import { theme } from './theme/theme'
 import { AuthProvider } from './auth/AuthContext'
 import { LoginGateProvider } from './auth/LoginGateContext'
+import { AdminAuthProvider } from './admin/AdminAuthContext'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -33,7 +34,9 @@ enableMocking().then(() => {
           <BrowserRouter>
             <AuthProvider>
               <LoginGateProvider>
-                <App />
+                <AdminAuthProvider>
+                  <App />
+                </AdminAuthProvider>
               </LoginGateProvider>
             </AuthProvider>
           </BrowserRouter>
