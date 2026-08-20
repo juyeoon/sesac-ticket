@@ -6,7 +6,7 @@
 [구현할 것]
 - check_db() -> bool: writer/reader에 SELECT 1
 - check_cache() -> bool: master/replica에 PING
-- get_version_info(platform) -> dict (api 설계서 SYS-003)
+- get_version_info(platform, client_ip) -> dict (api 설계서 SYS-003 + 프론트 요청 필드)
 
 [의존]
 - app.db.session (writer_engine, reader_engine)
@@ -64,7 +64,7 @@ def check_cache() -> bool:
         return False
 
 
-def get_version_info(platform: str | None) -> dict:
+def get_version_info(platform: str | None, client_ip: str | None) -> dict:
     if platform is not None and platform not in _VALID_PLATFORMS:
         raise AppException(
             ErrorCode.COMMON_VALIDATION_FAILED,
@@ -81,4 +81,9 @@ def get_version_info(platform: str | None) -> dict:
             "force_update": settings.app_force_update,
             "update_url": settings.app_update_url,
         },
+        "server": {
+            "instance_id": settings.instance_id,
+            "az": settings.instance_az,
+        },
+        "client_ip": client_ip,
     }

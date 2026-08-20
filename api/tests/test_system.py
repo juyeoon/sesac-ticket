@@ -7,6 +7,7 @@
 - test_health_live_returns_up
 - test_health_ready_returns_up_when_dependencies_ok
 - test_version_default
+- test_version_includes_server_and_client_ip
 - test_version_with_valid_platform
 - test_version_with_invalid_platform_returns_400
 
@@ -43,6 +44,16 @@ def test_version_default(client):
         "forceUpdate",
         "updateUrl",
     }
+
+
+def test_version_includes_server_and_client_ip(client):
+    response = client.get("/api/v1/version")
+    assert response.status_code == 200
+    body = response.json()
+
+    assert set(body["server"].keys()) == {"instanceId", "az"}
+    assert body["server"]["instanceId"]
+    assert body["clientIp"]
 
 
 def test_version_with_valid_platform(client):
