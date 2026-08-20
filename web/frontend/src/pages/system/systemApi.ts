@@ -3,6 +3,8 @@ import { api } from '../../api/client'
 export interface VersionResult {
   apiVersion: string
   server: { instanceId: string; az: string }
+  /** X-Forwarded-For — ALB/nginx 프록시 체인이 실제로 클라이언트 IP를 전달하는지 확인용 */
+  clientIp: string
 }
 
 /**

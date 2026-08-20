@@ -1,16 +1,11 @@
 import { api } from '../../api/client'
 
-export interface BankAccountInfo {
-  bankName: string
-  accountNumber: string
-  accountHolder: string
-}
-
 export interface BankTransferReservation {
   reservationId: number
   status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'EXPIRED'
   paymentMethod: 'BANK_TRANSFER'
-  bankAccountInfo: BankAccountInfo
+  /** 실제 백엔드가 문자열 하나로 관리함(BANK_ACCOUNT_INFO 환경변수) — 구조화된 객체 아님 */
+  bankAccountInfo: string
   paymentDueAt: string
 }
 

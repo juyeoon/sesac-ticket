@@ -51,8 +51,5 @@ export const store = {
   nextReservationId: 1000,
 }
 
-export const BANK_ACCOUNT_INFO = {
-  bankName: '새싹은행',
-  accountNumber: '110-482-991234',
-  accountHolder: '(주)새싹티켓',
-}
+/** 실제 백엔드는 이걸 문자열 하나(BANK_ACCOUNT_INFO 환경변수)로 관리함 — 형식 그대로 맞춤 */
+export const BANK_ACCOUNT_INFO = '국민은행 123456-78-901234 (예금주: 새싹티켓)'

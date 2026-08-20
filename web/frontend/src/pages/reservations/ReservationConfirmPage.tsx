@@ -80,9 +80,7 @@ export default function ReservationConfirmPage() {
             입금 안내
           </Typography>
           <Stack spacing={1.25}>
-            <InfoRow label="입금 은행" value={data.bankAccountInfo.bankName} />
-            <InfoRow label="계좌번호" value={data.bankAccountInfo.accountNumber} />
-            <InfoRow label="예금주" value={data.bankAccountInfo.accountHolder} />
+            <InfoRow label="입금 계좌" value={data.bankAccountInfo} />
             <InfoRow label="입금자명" value={data.depositorName} />
             <Divider />
             <InfoRow label="입금 기한" value={dayjs(data.paymentDueAt).format('YYYY.MM.DD HH:mm')} emphasize />

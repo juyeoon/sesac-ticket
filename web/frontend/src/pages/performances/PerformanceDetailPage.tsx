@@ -85,9 +85,11 @@ export default function PerformanceDetailPage() {
         </Box>
 
         <Box sx={{ flex: 1 }}>
-          <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
-            <StatusBadge status={data.status} />
-          </Stack>
+          {data.status && (
+            <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+              <StatusBadge status={data.status} />
+            </Stack>
+          )}
           <Typography variant="h2" sx={{ mb: 3 }}>
             {data.title}
           </Typography>

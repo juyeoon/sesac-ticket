@@ -15,6 +15,7 @@ export function SystemInfoBadge() {
       {data && (
         <>
           {' · '}Server v{data.apiVersion} ({data.server.instanceId} · {data.server.az})
+          {' · '}X-Forwarded-For: {data.clientIp}
         </>
       )}
     </Typography>

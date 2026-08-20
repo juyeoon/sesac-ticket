@@ -32,6 +32,16 @@ export interface MockPerformance {
 
 export const CATEGORIES = ['콘서트', '뮤지컬', '연극', '전시'] as const
 
+/**
+ * 실제 백엔드(perf_seed.py)엔 콘서트(1)/뮤지컬(2)만 있음. 연극/전시는 프론트 mock에만 있는
+ * 데모용 추가 카테고리라 3/4번으로 채번해서 실제 id와 안 겹치게 해둠 — 실제 연동 시 정리 대상.
+ */
+const CATEGORY_IDS: Record<string, number> = { 콘서트: 1, 뮤지컬: 2, 연극: 3, 전시: 4 }
+
+export function categoryOf(name: string) {
+  return { id: CATEGORY_IDS[name] ?? 0, name }
+}
+
 export const performances: MockPerformance[] = [
   {
     id: 1,

@@ -4,13 +4,14 @@ export interface PerformanceListItem {
   id: number
   title: string
   thumbnailUrl: string | null
-  category: string
-  venue: { id: number; name: string }
+  category: { id: number; name: string }
+  venue: { id: number; name: string; address: string }
   dateFrom: string
   dateTo: string
   ticketOpenAt: string
   ticketCloseAt: string
-  status: 'UPCOMING' | 'ON_SALE' | 'CLOSED'
+  /** 실제 백엔드가 확인해준 값은 현재 "ACTIVE" 하나뿐 — 다른 값이 뭔지 미확정이라 string으로 느슨하게 둠 */
+  status: string
 }
 
 export interface SeatGrade {
@@ -33,7 +34,8 @@ export interface PerformanceDetail {
   description: string
   ticketOpenAt: string
   ticketCloseAt: string
-  status: 'UPCOMING' | 'ON_SALE' | 'CLOSED'
+  /** 실제 백엔드 상세 응답엔 status 필드 자체가 없음 — 목록 조회에만 있음. 없으면 배지 자체를 안 그림. */
+  status?: string
   schedules: Schedule[]
   priceInfo: { minPrice: number; maxPrice: number }
   runningTimeMin: number

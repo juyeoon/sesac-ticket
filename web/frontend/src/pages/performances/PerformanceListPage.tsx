@@ -19,7 +19,7 @@ export default function PerformanceListPage() {
   const filtered = useMemo(() => {
     const content = data?.content ?? []
     if (category === '전체') return content
-    return content.filter((p) => p.category === category)
+    return content.filter((p) => p.category.name === category)
   }, [data, category])
 
   const handleCategoryClick = (next: string) => {

@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { performances } from '../data/performances'
+import { categoryOf, performances } from '../data/performances'
 import { countRemainingByGrade } from '../seatStatus'
 
 const BASE = '/api/v1'
@@ -22,8 +22,8 @@ function toListItem(p: (typeof performances)[number]) {
     id: p.id,
     title: p.title,
     thumbnailUrl: null,
-    category: p.category,
-    venue: { id: p.venue.id, name: p.venue.name },
+    category: categoryOf(p.category),
+    venue: p.venue,
     dateFrom: p.dateFrom,
     dateTo: p.dateTo,
     ticketOpenAt: p.ticketOpenAt,
@@ -69,11 +69,11 @@ export const performanceHandlers = [
     return HttpResponse.json({
       id: performance.id,
       title: performance.title,
-      category: { id: 0, name: performance.category },
+      category: categoryOf(performance.category),
       description: performance.description,
       ticketOpenAt: performance.ticketOpenAt,
       ticketCloseAt: performance.ticketCloseAt,
-      status: performance.status,
+      // 실제 백엔드 상세 응답엔 status가 없음 — 일부러 안 넣음 (docs/backend-decisions-needed.md 참고)
       schedules: performance.schedules.map(withLiveRemaining),
       priceInfo: { minPrice: Math.min(...prices), maxPrice: Math.max(...prices) },
       runningTimeMin: performance.runningTimeMin,

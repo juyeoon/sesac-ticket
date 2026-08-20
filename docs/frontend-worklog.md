@@ -1,0 +1,49 @@
+# 프론트 작업 로그
+
+> 세션별로 무슨 일이 있었는지 시간순으로 남기는 기록용 문서. "지금 뭘 해야 하는지"는 [`frontend-handoff.md`](./frontend-handoff.md)를 보고, "왜 이렇게 됐는지"가 궁금할 때 여기를 본다. 새 세션 끝날 때마다 아래에 새 날짜 섹션을 추가한다 (기존 기록은 수정하지 않고 append만).
+
+---
+
+## 2026-08-20
+
+### 프로젝트 파악
+- `skeleton.md`, `notion/` 폴더(api-contract.md, api-파일-분담표.md, OWNERSHIP.md, claude-code-스켈레톤-지침.md, 전체 프로젝트 html export), `figma/` 와이어프레임, `ref.md`를 전부 확인.
+- 구글 스프레드시트(`api 설계서`, `요구사항 정의서`, `서비스 스펙 및 사용 범위` 탭)를 직접 열어서 notion 문서보다 최신인 실제 API 스펙 확보.
+- git 브랜치 전략 파악: `feature/ui`(프론트), `feature/backend-skeleton` 등 백엔드 브랜치들, 최종적으로 `main`에 merge.
+
+### 디자인 시스템 + 스캐폴드
+- Vite + React 19 + TypeScript + MUI(v9) + react-router-dom + MSW로 `web/frontend` 스캐폴드 생성.
+- 참고 이미지(파스텔 블루/세이지그린/바닐라옐로 + 블랙 포인트, 미니멀 대시보드 톤) 기반으로 색상 팔레트 확정, `docs/design-system.md` 작성.
+- Pretendard CDN 적용, MUI 테마(`src/theme/theme.ts`) 구성.
+
+### Phase 0~3 구현 (전부 실제 브라우저로 검증 완료)
+- **Phase 0**: 공통 레이아웃(RootLayout), 인증 Context, 로그인 유도 모달.
+- **Phase 1**: 로그인/회원가입(이메일 인증 포함)/비밀번호 재설정. figma 대비 변경사항 다수 발견·반영(성명→닉네임, 새 비밀번호 필드 추가 등).
+  - 버그: 로그인 실패 이슈 발생 → 원인은 새 npm 패키지 추가 후 dev 서버 미재시작(Vite 의존성 사전번들링 문제)이었음, 코드 버그 아님.
+- **Phase 2**: 공연 목록/검색/카테고리 필터, 공연 상세(공유하기, 관심공연 하트), 회차 선택.
+- **Phase 3**: 대기열(3초 폴링, 데모용 ~7초 고정 대기) → 좌석 선택(venue 좌표 + 실시간 상태 프론트 병합) → Hold+카운트다운 타이머 → 무통장입금 예매 생성/확인.
+  - **버그 발견 및 수정**: Hold 만료 시 로컬 타이머가 0이 되는 시점과 서버가 실제로 좌석을 해제하는 시점 사이 레이스 컨디션 — 로컬 타이머 0 도달 시 서버에 즉시 재확인을 강제하고, 서버 확인 후에만 화면을 되돌리도록 수정 (`useHoldCountdown.ts`).
+- 매 Phase마다 Playwright를 임시로 설치해 실제 클릭 흐름을 끝까지 재현하고, 검증 후 `npm uninstall playwright`로 제거하는 패턴 확립 (상시 테스트 프레임워크는 안 두기로 함).
+
+### 버전/서버 정보 표시 (제출 필수조건)
+- Footer에 `Front v{package.json 버전} · Server v{apiVersion} (instanceId · az) · X-Forwarded-For: ...` 노출.
+- `/health/*`는 k8s probe 전용이라 이 용도에 안 맞는다는 걸 확인, 대신 `/api/v1/version`(API-SYS-003)에 서버 식별 필드를 얹는 방식을 백엔드에 제안.
+
+### 실제 배포 서버로 계약 검증
+- 팀이 공유한 살아있는 백엔드 서버(`43.201.61.179:8000/docs`)의 실제 OpenAPI 스펙과 `feature/integration2`의 `api/.env.example`, `perf_seed.py`를 직접 확인.
+- 발견한 불일치를 프론트 코드에 즉시 반영: `category`가 문자열이 아니라 `{id,name}` 객체, `venue`에 `address` 포함, `bankAccountInfo`는 객체가 아니라 문자열 하나, 공연 상세 응답엔 `status` 필드 자체가 없음(목록에만 있음) 등.
+- gender/ageRange optional 필드 존재, Hold TTL(5분)/입금기한(24시간)/대기열 폴링(3초) 등 여러 assumption이 실제 값과 일치함을 확인.
+- 이 과정에서 `docs/backend-decisions-needed.md`(1차, 이미 백엔드에 공유되어 `_answer.md`로 답변 받는 중)와 `docs/backend-decisions-followup-1.md`(2차, 실제 서버 확인 후 추가 발견분)로 문서를 나눔 — **1차 문서는 이미 공유된 것이라 이후 절대 직접 수정하지 않기로 함**, 새로 발견하는 내용은 항상 새 파일로.
+
+### 로컬 폴더 구조 정리 (여러 번 시행착오)
+- 처음엔 git worktree를 sibling 폴더에 만들고 junction으로 `sesac-ticket/api`에 연결하는 방식을 시도했으나, 사용자가 "연결 말고 진짜 파일을 그 자리에 두고 싶다"고 명확히 함.
+- 시행착오: junction 제거 후 plain copy(스냅샷, 최신화 안 됨) → 그것도 아니고 "그 폴더에서 직접 git pull이 되어야 한다"는 요구 → `sesac-ticket/api`에 `feature/integration2`를 직접 clone 시도했으나 그 브랜치 자체의 루트에 이미 `api/`가 있어서 이중 중첩(`api/api/...`) 발생.
+- **최종 결론**: `sesac-ticket/backend/`라는 이름으로 `feature/integration2`를 독립적으로 clone(자체 `.git` 보유, 완전히 별개 저장소). `backend/api/app/...`가 실제 코드 경로. `cd backend && git pull`로 최신화, `feature/ui` 쪽에는 `.gitignore`의 `/backend/`로 완전히 안 보이게 처리.
+
+### 문서 정리
+- `web/frontend/README.md`에 기술스택(버전 포함)/실행법/clone 시나리오 2가지(프론트만 vs 전체)/폴더구조/Mock 원리/테스트 계정/Phase 현황/화면별 테스트 시나리오/설계결정/figma 변경사항/트러블슈팅을 통합 — 기존 `docs/testing-guide.md`는 삭제(내용 흡수).
+- `docs/frontend-handoff.md`(세션 간 인계용 "현재 상태" 요약), `docs/frontend-worklog.md`(지금 이 문서, 시간순 기록) 신설.
+- 팀 채팅에서 얻은 프로젝트 배경(MySQL/Valkey 단일화, S3 미사용, 실제 시크릿 평문 공유 습관 등)은 개인 메모리에 저장.
+
+### 커밋 상태
+세션 종료 시점 기준 다수 변경사항이 **아직 커밋되지 않음** — `frontend-handoff.md`의 "가장 먼저 할 것" 섹션에 커밋 대상과 명령어 정리해둠.
