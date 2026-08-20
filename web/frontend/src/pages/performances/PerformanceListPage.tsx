@@ -29,7 +29,6 @@ function HeroBanner({ performance }: { performance: PerformanceListItem }) {
         position: 'relative',
         display: 'block',
         height: { xs: 200, sm: 260 },
-        borderRadius: '20px',
         overflow: 'hidden',
         textDecoration: 'none',
         flex: 1,
@@ -61,7 +60,7 @@ function HeroBanner({ performance }: { performance: PerformanceListItem }) {
   )
 }
 
-/** 카테고리 원형 아이콘 배지 — 야놀자/인터파크 티켓 홈 화면의 카테고리 진입점 패턴을 참고 */
+/** 카테고리 아이콘 배지 — 야놀자/인터파크 티켓 홈 화면의 카테고리 진입점 패턴을 참고(모양은 각진 사각형으로 통일) */
 function CategoryRail({
   categories,
   selected,
@@ -82,13 +81,12 @@ function CategoryRail({
             onClick={() => onSelect(name)}
             aria-label={`${name} 카테고리`}
             aria-pressed={isSelected}
-            sx={{ flexDirection: 'column', gap: 0.75, borderRadius: '16px', p: 0.5, flexShrink: 0 }}
+            sx={{ flexDirection: 'column', gap: 0.75, p: 0.5, flexShrink: 0 }}
           >
             <Box
               sx={{
                 width: 56,
                 height: 56,
-                borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

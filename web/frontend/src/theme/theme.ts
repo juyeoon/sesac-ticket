@@ -120,9 +120,21 @@ export const theme = createTheme(
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            // 버튼과 완전히 동일한 radius 토큰 — border-radius는 요소 높이의 절반을 넘지 못하므로
-            // 999px을 줘도 인풋 높이에 맞춰 자동으로 clamp되어 버튼과 같은 "완전히 둥근" 톤이 된다.
             borderRadius: radius.pill,
+          },
+        },
+      },
+      MuiAvatar: {
+        styleOverrides: {
+          root: {
+            borderRadius: 0,
+          },
+        },
+      },
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: 0,
           },
         },
       },

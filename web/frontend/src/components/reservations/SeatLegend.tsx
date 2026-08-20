@@ -15,9 +15,8 @@ export function SeatLegend() {
         <Stack key={item.label} direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
           <Box
             sx={{
-              width: 18,
-              height: 18,
-              borderRadius: '6px 6px 3px 3px',
+              width: 16,
+              height: 16,
               bgcolor: item.bg,
               border: `1px solid ${item.border}`,
             }}

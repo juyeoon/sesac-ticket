@@ -115,7 +115,7 @@ export default function PerformanceDetailPage() {
       <Container maxWidth="lg" sx={{ py: 5 }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={4}>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Stack spacing={1.5} sx={{ mb: 4, p: 2.5, borderRadius: '20px', border: 1, borderColor: 'grey.100' }}>
+            <Stack spacing={1.5} sx={{ mb: 4, p: 2.5, border: 1, borderColor: 'grey.100' }}>
               <InfoRow icon={CategoryOutlinedIcon} label="공연 종류" value={data.category.name} />
               <InfoRow icon={PlaceOutlinedIcon} label="공연장" value={`${data.venue.name} (${data.venue.address ?? '주소 미정'})`} />
               <InfoRow
@@ -179,7 +179,7 @@ export default function PerformanceDetailPage() {
                   </Button>
                   <IconButton
                     onClick={() => requireAuth(() => favoriteMutation.mutate())}
-                    sx={{ border: 1, borderColor: 'grey.200', borderRadius: '999px' }}
+                    sx={{ border: 1, borderColor: 'grey.200', borderRadius: 0 }}
                     aria-label={isFavorited ? '관심 공연 해제' : '관심 공연 등록'}
                   >
                     {isFavorited ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}

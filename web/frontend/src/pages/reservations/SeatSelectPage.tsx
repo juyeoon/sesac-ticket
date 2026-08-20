@@ -216,7 +216,7 @@ export default function SeatSelectPage() {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 5, pb: 16 }}>
+    <Container maxWidth="lg" sx={{ py: 5, pb: 16 }}>
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 4 }}>
         <Box sx={{ width: 64, flexShrink: 0 }}>
           <PlaceholderImage seed={String(context.performanceId)} aspectRatio="1 / 1" />
@@ -239,7 +239,7 @@ export default function SeatSelectPage() {
         <SeatLegend />
       </Stack>
 
-      <Box sx={{ p: { xs: 1.5, sm: 3 }, borderRadius: '20px', border: 1, borderColor: 'grey.100' }}>
+      <Box sx={{ p: { xs: 1.5, sm: 3 }, border: 1, borderColor: 'grey.100' }}>
         {mergedSeats.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
             <CircularProgress />
@@ -258,12 +258,11 @@ export default function SeatSelectPage() {
           borderRadius: 0,
           borderTop: 1,
           borderColor: 'divider',
-          boxShadow: '0 -8px 24px -12px rgba(33,33,33,0.18)',
           py: 2,
         }}
         elevation={0}
       >
-        <Container maxWidth="md">
+        <Container maxWidth="lg">
           {!holdId ? (
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
               <Box sx={{ flex: 1 }}>

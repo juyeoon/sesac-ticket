@@ -27,6 +27,23 @@ redis.exceptions.ResponseError: unknown command 'ZPOPMIN'
 
 이 명령이 막히면 `queue_dispatcher`가 항상 빈 배치를 방출하는 걸로 끝나서, 대기열에 들어간 사용자가 영원히 `WAITING`에 머물고 좌석 선택 화면까지 못 넘어갑니다. 프론트 쪽에서 고칠 수 있는 부분이 아니라 백엔드팀 확인 부탁드립니다. 배포 서버(`43.201.61.179:8000`)는 이번엔 접속이 안 돼서 거기서도 재현되는지는 확인 못 했습니다 — 혹시 배포 환경은 다른 Valkey/redis-py 조합이라 문제가 없는 상태라면, 그 조합이 뭔지 알려주시면 로컬도 맞추겠습니다.
 
+**저희 쪽 프론트 테스트가 막혀서, 로컬 clone에만 임시 우회를 적용해뒀습니다** (커밋/푸시 안 함, 저희 로컬 파일만): `dispatch_once()`의 `client.zpopmin(key, n)`을 `client.zrange(key, 0, n-1, withscores=True)` + `client.zrem(key, *tokens)`로 바꿨더니 동일하게 동작하고 `ZPOPMIN`을 안 씁니다 — 실 API로 `POST /queue/enter` → `GET /queue/{token}/status`가 몇 초 안에 `READY`로 바뀌는 것까지 확인했습니다. 혹시 원인 파악에 참고 되실까 해서 공유드리는 거고, 정식 수정은 여전히 백엔드팀 판단에 맡깁니다 (예: `ZPOPMIN`이 진짜 필요하면 다른 방식으로, 혹은 이 우회를 그대로 채택하셔도 될지는 저희가 결정할 부분이 아니라서요).
+
+## 🔴 확인 필요 — 같은 종류의 버그를 하나 더 발견함 (`HSET` 다중 필드)
+
+대기열 우회 후 좌석 화면으로 넘어가 보니 `GET /schedules/{scheduleId}/seats`가 500을 냅니다. 트레이스백:
+```
+File "app/domains/reservation/service.py", line 90, in get_seat_status_list
+    client.hset(key, mapping=mapping)
+redis.exceptions.ResponseError: wrong number of arguments for 'hset' command
+```
+격리해봤습니다:
+- `client.hset(key, '1', 'AVAILABLE')`(필드 1개) → **정상**
+- `client.hset(key, mapping={'1':'A','2':'B'})`(필드 2개 이상) → **실패**, `execute_command('HSET', key, *flattened_pairs)`로 직접 호출해도 동일하게 실패 — `hset()` 메서드 자체 문제가 아니라 `HSET` 명령에 다중 필드-값 쌍을 실어 보내는 것 자체가 이 환경에서 깨지는 것으로 보입니다.
+- 레거시 `client.hmset(key, mapping)`(내부적으로 `HMSET` 명령을 씀, deprecated) → **정상 동작**. `ZPOPMIN`/`HSET` 둘 다 "여러 값을 한 번에 보내는" 신형 명령 계열이라는 공통점이 있어서, 혹시 `protocol=2`와 redis-py 8.1.0의 신형 멀티벌크 인자 처리 쪽에 공통 원인이 있는 게 아닌가 싶습니다.
+
+**임시로 이 파일도 로컬에서 `hmset`으로 바꿔뒀습니다**(위와 동일하게 커밋/푸시 안 함). 같은 원인일 가능성이 높아서, 이 두 건을 같이 보시면 디버깅이 더 빠를 것 같아 함께 적어둡니다. 코드베이스에 이런 "다중 값 한 번에" 패턴을 쓰는 다른 곳(예: `ZADD`도 매핑을 한 번에 넣던데 이건 저희 테스트에서 정상 동작했습니다)이 더 있다면 미리 점검해보시는 게 안전할 것 같습니다.
+
 ## 🟡 확인 요청 — 회원가입 시 이메일 인증 순서
 
 `POST /auth/email/verify-request`를 코드로 확인해보니, 이미 가입된 회원(`member_repository.get_member_by_email`로 조회됨)에게만 인증 코드를 발급하고, 없는 이메일이면 조용히 무시하고 `{sent:true}`만 응답하도록 돼 있었습니다(`auth/service.py:150-153`). 그리고 `POST /auth/signup`과 `login` 둘 다 이메일 인증 여부(`email_verified`)를 확인하지 않습니다.

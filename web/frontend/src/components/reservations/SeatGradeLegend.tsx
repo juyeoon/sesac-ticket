@@ -18,12 +18,10 @@ export function SeatGradeLegend({ seatGrades, gradeColors }: SeatGradeLegendProp
           <Stack key={g.grade} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Box
               sx={{
-                width: 22,
-                height: 22,
-                borderRadius: '7px 7px 3px 3px',
+                width: 16,
+                height: 16,
                 bgcolor: color.soft,
                 border: `1px solid ${color.main}55`,
-                boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.55)',
               }}
             />
             <Stack spacing={-0.25}>

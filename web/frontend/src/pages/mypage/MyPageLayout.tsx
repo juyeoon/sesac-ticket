@@ -32,7 +32,6 @@ export default function MyPageLayout() {
           sx={{
             width: 64,
             height: 64,
-            borderRadius: '50%',
             flexShrink: 0,
             bgcolor: 'text.primary',
             color: 'background.paper',

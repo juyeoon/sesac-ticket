@@ -53,12 +53,13 @@ export const seat = {
   reservedText: neutral.gray300,
 } as const
 
+/** 2026-08-20: 그림자에 이어 radius도 "촌스럽다"는 피드백으로 전면 폐지 — 전부 각진 사각형(0)으로 통일. */
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  pill: 999,
+  sm: 0,
+  md: 0,
+  lg: 0,
+  xl: 0,
+  pill: 0,
 } as const
 
 export const fontFamily =
