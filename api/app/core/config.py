@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     # --- 인프라 ---
     trusted_proxy_hosts: str = "*"  # ALB 2단 구성. 운영에서는 nginx 내부 IP 대역으로 한정할 것
     cookie_secure: bool = True  # refreshToken 쿠키 Secure 플래그. 로컬 http 개발 시 false
+    storage_base_url: str = ""  # 공연 이미지 CDN/스토리지 base URL. 비어있으면 file_key를 그대로 씀
 
     # --- 앱/API 버전 (SYS-003) ---
     api_version: str = "1.0.0"
