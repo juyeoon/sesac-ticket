@@ -1,5 +1,6 @@
-import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
+import { Box, Card, CardContent, Chip, Stack, Typography } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 import { Link as RouterLink } from 'react-router-dom'
 import { PlaceholderImage } from '../common/PlaceholderImage'
 import { StatusBadge } from './StatusBadge'
@@ -25,14 +26,18 @@ export function PerformanceCard({ performance }: { performance: PerformanceListI
       <CardContent>
         <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
           <StatusBadge status={performance.status} />
+          <Chip size="small" variant="outlined" label={performance.category.name} />
         </Stack>
         <Typography variant="h6" sx={{ mb: 0.5 }}>
           {performance.title}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {performance.venue.name}
-          {performance.dateFrom && performance.dateTo && ` · ${performance.dateFrom} ~ ${performance.dateTo}`}
-        </Typography>
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 2, color: 'text.secondary' }}>
+          <PlaceOutlinedIcon sx={{ fontSize: 16 }} />
+          <Typography variant="body2" color="text.secondary">
+            {performance.venue.name}
+            {performance.dateFrom && performance.dateTo && ` · ${performance.dateFrom} ~ ${performance.dateTo}`}
+          </Typography>
+        </Stack>
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', color: 'text.primary' }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
             예매하러 가기

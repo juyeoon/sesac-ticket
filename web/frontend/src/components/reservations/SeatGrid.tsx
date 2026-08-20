@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { Box, Typography } from '@mui/material'
-import { seat as seatTokens } from '../../theme/tokens'
+import { seat as seatTokens, neutral } from '../../theme/tokens'
 import type { SeatStatus } from '../../pages/reservations/seatApi'
+import { getGradeColor, type GradeColor } from './gradeColor'
 
 export interface MergedSeat {
   seatId: number
@@ -16,40 +18,91 @@ interface SeatGridProps {
   seats: MergedSeat[]
   selectedSeatIds: number[]
   onToggle: (seatId: number) => void
+  gradeColors: Map<string, GradeColor>
 }
 
-function seatStyle(status: SeatStatus, isSelected: boolean) {
-  if (isSelected) return { bgcolor: seatTokens.selectedBg, color: seatTokens.selectedText, border: 'none' }
-  if (status === 'RESERVED') return { bgcolor: seatTokens.reservedBg, color: seatTokens.reservedText, border: 'none' }
-  if (status === 'HELD') return { bgcolor: seatTokens.heldBg, color: seatTokens.heldText, border: `1px solid ${seatTokens.heldBorder}` }
-  return { bgcolor: seatTokens.availableBg, color: 'text.primary', border: `1px solid ${seatTokens.availableBorder}` }
+const CELL = 36
+
+function seatStyle(status: SeatStatus, isSelected: boolean, gradeColor: GradeColor) {
+  if (isSelected) return { bgcolor: seatTokens.selectedBg, color: seatTokens.selectedText, border: 'none', boxShadow: 'none' }
+  if (status === 'RESERVED') return { bgcolor: seatTokens.reservedBg, color: seatTokens.reservedText, border: 'none', boxShadow: 'none' }
+  if (status === 'HELD') return { bgcolor: seatTokens.heldBg, color: seatTokens.heldText, border: `1px solid ${seatTokens.heldBorder}`, boxShadow: 'none' }
+  return {
+    bgcolor: gradeColor.soft,
+    color: gradeColor.main,
+    border: `1px solid ${gradeColor.main}55`,
+    boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.55)',
+  }
 }
 
-export function SeatGrid({ seats, selectedSeatIds, onToggle }: SeatGridProps) {
+/** 무대를 곡선으로 표현 — 좌석이 부채꼴로 펼쳐진 공연장 느낌을 살리기 위함. */
+function StageArc({ width }: { width: number }) {
+  const w = Math.max(280, width)
+  const h = 56
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4, minWidth: w }}>
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
+        <path
+          d={`M 16 ${h - 10} Q ${w / 2} 2 ${w - 16} ${h - 10}`}
+          fill="none"
+          stroke={neutral.gray300}
+          strokeWidth={4}
+          strokeLinecap="round"
+        />
+      </svg>
+      <Typography variant="overline" sx={{ letterSpacing: 6, color: 'text.disabled', mt: -1.5, fontWeight: 700 }}>
+        STAGE
+      </Typography>
+    </Box>
+  )
+}
+
+export function SeatGrid({ seats, selectedSeatIds, onToggle, gradeColors }: SeatGridProps) {
   const maxX = Math.max(1, ...seats.map((s) => s.x))
   const maxY = Math.max(1, ...seats.map((s) => s.y))
+  const totalWidth = (maxX + 2) * (CELL + 6)
+
+  const rowLabelByY = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const s of seats) if (!map.has(s.y)) map.set(s.y, s.row)
+    return map
+  }, [seats])
 
   return (
     <Box sx={{ overflowX: 'auto', pb: 1 }}>
-      <Box sx={{ minWidth: maxX * 42, mb: 3 }}>
-        <Box sx={{ bgcolor: 'grey.800', color: 'common.white', textAlign: 'center', py: 1.5, borderRadius: 2 }}>
-          <Typography variant="subtitle2">STAGE</Typography>
-        </Box>
-      </Box>
+      <StageArc width={maxX * (CELL + 6)} />
 
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${maxX}, 34px)`,
-          gridTemplateRows: `repeat(${maxY}, 34px)`,
+          gridTemplateColumns: `28px repeat(${maxX}, ${CELL}px) 28px`,
+          gridTemplateRows: `repeat(${maxY}, ${CELL}px)`,
           gap: '6px',
-          minWidth: maxX * 42,
+          minWidth: totalWidth,
+          alignItems: 'center',
         }}
       >
+        {[...rowLabelByY.entries()].flatMap(([y, label]) => [
+          <Typography
+            key={`l-${y}`}
+            variant="caption"
+            sx={{ gridColumn: 1, gridRow: y, textAlign: 'center', color: 'text.disabled', fontWeight: 600 }}
+          >
+            {label}
+          </Typography>,
+          <Typography
+            key={`r-${y}`}
+            variant="caption"
+            sx={{ gridColumn: maxX + 2, gridRow: y, textAlign: 'center', color: 'text.disabled', fontWeight: 600 }}
+          >
+            {label}
+          </Typography>,
+        ])}
+
         {seats.map((seat) => {
           const isSelected = selectedSeatIds.includes(seat.seatId)
           const disabled = seat.status !== 'AVAILABLE' && !isSelected
-          const style = seatStyle(seat.status, isSelected)
+          const style = seatStyle(seat.status, isSelected, getGradeColor(gradeColors, seat.grade))
           return (
             <Box
               key={seat.seatId}
@@ -58,18 +111,20 @@ export function SeatGrid({ seats, selectedSeatIds, onToggle }: SeatGridProps) {
               data-seat-id={seat.seatId}
               data-seat-status={isSelected ? 'SELECTED' : seat.status}
               sx={{
-                gridColumn: seat.x,
+                gridColumn: seat.x + 1,
                 gridRow: seat.y,
+                width: CELL,
+                height: CELL,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: '8px',
+                borderRadius: '10px 10px 4px 4px',
                 fontSize: 11,
                 fontWeight: 700,
                 userSelect: 'none',
                 cursor: disabled ? 'not-allowed' : 'pointer',
-                transition: 'transform 0.1s ease',
-                '&:hover': disabled ? undefined : { transform: 'scale(1.08)' },
+                transition: 'transform 0.12s ease',
+                '&:hover': disabled ? undefined : { transform: 'scale(1.1)' },
                 ...style,
               }}
             >

@@ -12,6 +12,13 @@ import {
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined'
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
+import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
+import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
+import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined'
+import Diversity3OutlinedIcon from '@mui/icons-material/Diversity3Outlined'
+import type { SvgIconComponent } from '@mui/icons-material'
 import dayjs from 'dayjs'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PlaceholderImage } from '../../components/common/PlaceholderImage'
@@ -93,19 +100,24 @@ export default function PerformanceDetailPage() {
             {data.title}
           </Typography>
 
-          <Stack spacing={1.5} sx={{ mb: 3 }}>
-            <InfoRow label="공연 종류" value={data.category.name} />
-            <InfoRow label="공연장" value={`${data.venue.name} (${data.venue.address})`} />
+          <Stack
+            spacing={1.5}
+            sx={{ mb: 3, p: 2.5, borderRadius: '20px', border: 1, borderColor: 'grey.100' }}
+          >
+            <InfoRow icon={CategoryOutlinedIcon} label="공연 종류" value={data.category.name} />
+            <InfoRow icon={PlaceOutlinedIcon} label="공연장" value={`${data.venue.name} (${data.venue.address ?? '주소 미정'})`} />
             <InfoRow
+              icon={EventOutlinedIcon}
               label="예매 기간"
               value={`${formatDate(data.ticketOpenAt)} - ${formatDate(data.ticketCloseAt)}`}
             />
             <InfoRow
+              icon={PaidOutlinedIcon}
               label="가격"
               value={`${data.priceInfo.minPrice.toLocaleString()}원 ~ ${data.priceInfo.maxPrice.toLocaleString()}원`}
             />
-            <InfoRow label="관람 시간" value={data.runningTimeMin ? `${data.runningTimeMin}분` : '미정'} />
-            <InfoRow label="관람 연령" value={data.ageLimit ?? '미정'} />
+            <InfoRow icon={AccessTimeOutlinedIcon} label="관람 시간" value={data.runningTimeMin ? `${data.runningTimeMin}분` : '미정'} />
+            <InfoRow icon={Diversity3OutlinedIcon} label="관람 연령" value={data.ageLimit ?? '미정'} />
           </Stack>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3, whiteSpace: 'pre-line' }}>
@@ -148,10 +160,11 @@ export default function PerformanceDetailPage() {
   )
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ icon: Icon, label, value }: { icon: SvgIconComponent; label: string; value: string }) {
   return (
-    <Stack direction="row" spacing={2}>
-      <Typography variant="body2" sx={{ width: 88, flexShrink: 0, fontWeight: 600 }}>
+    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'flex-start' }}>
+      <Icon sx={{ fontSize: 18, color: 'text.disabled', mt: '2px' }} />
+      <Typography variant="body2" sx={{ width: 76, flexShrink: 0, fontWeight: 600 }}>
         {label}
       </Typography>
       <Typography variant="body2" color="text.secondary">

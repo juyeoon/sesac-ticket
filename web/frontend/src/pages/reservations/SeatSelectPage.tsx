@@ -15,6 +15,8 @@ import {
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { SeatGrid, type MergedSeat } from '../../components/reservations/SeatGrid'
 import { SeatLegend } from '../../components/reservations/SeatLegend'
+import { SeatGradeLegend } from '../../components/reservations/SeatGradeLegend'
+import { buildGradeColorMap, getGradeColor } from '../../components/reservations/gradeColor'
 import { CenteredMessagePage } from '../../components/common/CenteredMessagePage'
 import { seatApi } from './seatApi'
 import { performanceApi } from '../performances/performanceApi'
@@ -141,6 +143,8 @@ export default function SeatSelectPage() {
     return map
   }, [performance])
 
+  const gradeColors = useMemo(() => buildGradeColorMap(performance?.seatGrades ?? []), [performance])
+
   const selectedSeats = mergedSeats.filter((s) => selectedSeatIds.includes(s.seatId))
   const totalPrice = selectedSeats.reduce((sum, s) => sum + (priceByGrade.get(s.grade) ?? 0), 0)
 
@@ -219,16 +223,17 @@ export default function SeatSelectPage() {
         {performance?.title ?? context.performanceTitle}
       </Typography>
 
-      <Box sx={{ mb: 3 }}>
+      <Stack spacing={1.5} sx={{ mb: 3 }}>
+        <SeatGradeLegend seatGrades={performance?.seatGrades ?? []} gradeColors={gradeColors} />
         <SeatLegend />
-      </Box>
+      </Stack>
 
       {mergedSeats.length === 0 ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress />
         </Box>
       ) : (
-        <SeatGrid seats={mergedSeats} selectedSeatIds={selectedSeatIds} onToggle={toggleSeat} />
+        <SeatGrid seats={mergedSeats} selectedSeatIds={selectedSeatIds} onToggle={toggleSeat} gradeColors={gradeColors} />
       )}
 
       <Paper
@@ -252,9 +257,16 @@ export default function SeatSelectPage() {
                   <Typography color="text.secondary">좌석을 선택해주세요 (최대 {MAX_SEATS}석)</Typography>
                 ) : (
                   <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-                    {selectedSeats.map((s) => (
-                      <Chip key={s.seatId} label={`${s.grade} ${s.row}열 ${s.number}번`} />
-                    ))}
+                    {selectedSeats.map((s) => {
+                      const color = getGradeColor(gradeColors, s.grade)
+                      return (
+                        <Chip
+                          key={s.seatId}
+                          label={`${s.grade} ${s.row}열 ${s.number}번`}
+                          sx={{ bgcolor: color.soft, color: color.main, fontWeight: 600 }}
+                        />
+                      )
+                    })}
                   </Stack>
                 )}
               </Box>

@@ -98,10 +98,13 @@ MUI 팔레트가 아니라 `tokens.ts`의 `seat` 객체를 좌석 배치도 컴�
 
 | 상태 | 배경 | 보더/텍스트 |
 |---|---|---|
-| 예매 가능 (AVAILABLE) | White | 보더 `blueSoft` |
 | 선택 중 (내가 선택, SELECTED) | Eerie Black | 텍스트 White |
 | 선점 중 (다른 사용자, HELD) | Gray 50 | 보더 Gray 200, 텍스트 Gray 400 |
 | 예매 완료 (RESERVED) | Gray 100 | 텍스트 Gray 300 |
+
+**예매 가능(AVAILABLE) 좌석은 고정 색 하나가 아니라 좌석 등급별로 색이 다르다** — `components/reservations/gradeColor.ts`가 공연의 `seatGrades`를 가격 높은 순으로 훑어서 액센트 컬러(Vanilla → Alice Blue → Honeydew 순)를 배정한다. 등급 이름(VIP/R/S 등)은 백엔드가 자유롭게 정하므로 이름이 아니라 "가격 순서"로 매핑하는 게 핵심 — 등급이 몇 개든, 이름이 뭐든 항상 같은 순서로 톤이 배정된다. 좌석 배치도 위쪽에 `SeatGradeLegend`로 등급·가격을 색상 스와치와 함께 보여준다.
+
+좌석 셀 모양은 순수 사각형이 아니라 `border-radius: 10px 10px 4px 4px` + 상단 하이라이트(`inset box-shadow`)로 좌석 쿠션처럼 보이게 하고, 무대는 각진 배너 대신 곡선 SVG(`StageArc`, `SeatGrid.tsx` 내부)로 표현한다 — 배치도가 밋밋해 보인다는 피드백(`docs/ui_ref/seat_ref*.png`)을 반영한 결정.
 
 ## 7. 반응형 브레이크포인트
 

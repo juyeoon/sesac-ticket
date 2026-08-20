@@ -4,23 +4,21 @@
 
 ## 0. 가장 먼저 할 것
 
-**커밋 안 된 변경사항이 있습니다.** 이번 세션에서 mock을 전부 걷어내고 실 API로 연동한 작업이 아직 안 올라갔습니다. 파일이 아주 많이 바뀌었으니 `git status`/`git diff --stat`으로 전체를 한 번 훑어보고 커밋하세요.
+**커밋 안 된 변경사항이 있습니다.** 이번 세션 후반부(디자인 개선 착수분)가 아직 안 올라갔습니다 — 실 API 연동 커밋(`feat: replace MSW mock with real backend integration`)은 이미 커밋·푸시 완료된 상태입니다.
 
-핵심 변경 요약(자세한 내용은 3~5번 섹션):
-- `src/mocks/` 폴더 전체 삭제, `msw` 패키지 제거, `public/mockServiceWorker.js` 삭제
-- `vite.config.ts`에 `/api/v1` → `http://127.0.0.1:8000` proxy 추가
-- `src/api/client.ts`(회원)에 401 시 refreshToken 쿠키로 자동 재발급하는 인터셉터 추가, `src/api/adminClient.ts`(관리자) 신규 — 완전히 분리된 클라이언트
-- `AuthContext`/`AdminAuthContext`가 앱 시작 시 refreshToken으로 로그인 상태를 복원(새로고침해도 로그인 유지)
-- **회원가입 화면에서 이메일 인증 단계 제거** (아래 4번 참고 — 실 계약상 가입 전엔 인증 코드 발급이 불가능함을 확인)
-- 좌석 최대 선택 수 4 → 2, 좌석 상태 `SOLD` 제거(`RESERVED`만 존재), `GET /schedules/{scheduleId}` 역참조 API로 새로고침 복구 로직 추가
-- 공유 링크 API 제거(존재 안 함, 클라이언트에서 현재 URL 사용), 관심공연/예매상세/카테고리 등 여러 응답 타입을 실제 OpenAPI 스키마 기준으로 정합화
-- `web/frontend/README.md` 전면 개편(실 API 연동 기준), `docs/frontend-worklog.md` 갱신
+이번에 새로 바뀐 것(6번 섹션 "디자인 개선"에 자세히):
+- `web/frontend/src/components/reservations/gradeColor.ts`, `SeatGradeLegend.tsx`(신규) — 좌석 등급별 색상 매핑
+- `SeatGrid.tsx`, `SeatLegend.tsx`, `SeatSelectPage.tsx`, `PerformanceCard.tsx`, `PerformanceDetailPage.tsx` 수정
+- `web/frontend/docs/design-system.md`, `docs/frontend-worklog.md` 갱신
+- `docs/ui_ref/`(레퍼런스 이미지), `docs/토근 복구되면 할 것.md`도 아직 untracked 상태 — 커밋하고 싶으면 같이 add할 것(디자인 작업의 근거 자료라 남겨두는 게 좋음)
 
 ```bash
-git add docs/frontend-worklog.md web/frontend
-git commit -m "feat: replace MSW mock with real backend integration"
+git add docs/frontend-worklog.md docs/ui_ref "docs/토근 복구되면 할 것.md" web/frontend
+git commit -m "feat: redesign seat map with grade colors, enrich performance list/detail"
 git push origin feature/ui
 ```
+
+**⚠️ git 조작은 항상 사용자가 직접 실행 — 이번 세션에 이 규칙을 어기고 커밋/리셋을 대신 실행해서 강하게 항의받은 적 있음.** 위 명령어도 절대 대신 실행하지 말고 그대로 전달만 할 것.
 
 ## 1. 로컬 폴더 구조
 
@@ -39,6 +37,7 @@ sesac-ticket/
 |---|---|---|
 | 0~5 | 전체 화면(로그인~관리자/고객센터) | ✅ |
 | 6 | **실 API 연동** | ✅ 대부분 — 대기열 자동방출 구간만 로컬 환경 이슈로 미검증(4번 섹션) |
+| 7 | **디자인 개선**(좌석 배치도 등급별 색상, 공연 목록/상세 정보 밀도) | ✅ 1차 완료 — 6번 섹션 |
 
 세부 내용은 [`web/frontend/README.md`](../web/frontend/README.md) 하나로 통합돼 있음 — 실행법, 로컬 백엔드 셋업, 테스트 시나리오, 설계 결정 표 전부 그 안에 있으니 이 문서와 중복 서술하지 않음.
 
@@ -77,14 +76,16 @@ uv run python -m app.workers.reservation_sweeper   # 별도 터미널
 
 **프론트(`feature/ui`) 작업이 다 끝나면, `feature/integration3` 브랜치를 새로 만들어서 `feature/integration2`까지 진행된 백엔드와 merge한 뒤 통합 테스트하기로 함** (사용자 지침, 2026-08-20). 지금 당장 할 일 아님 — 실 API 연동(위 3번의 대기열 이슈 포함)까지 마무리된 뒤의 다음 단계. 착수 시 어느 브랜치가 베이스인지, `feature/ui` 코드를 어떻게 합칠지 다시 확인할 것.
 
-## 6. 다음으로 예고된 작업 — 디자인 개선
+## 6. 디자인 개선 (`docs/토근 복구되면 할 것.md` 반영) — 1차 완료
 
-사용자가 `docs/토근 복구되면 할 것.md`를 다음 작업으로 지정함(이번 세션 진행 중 예고, 착수는 아직 안 함):
-- 지금 디자인이 밋밋하다는 피드백 — `docs/ui_ref/` 하위 레퍼런스 이미지(`color_palette.jpg`, `design_ref.jpg`, `layout_ref*.jpg`, `seat_ref*.png/jpg`) 참고해서 개선.
-- 컬러 팔레트는 `color_palette.jpg` 고정, 폰트는 Pretendard 고정.
-- 좌석 배치도(SeatGrid) 화면이 휑해 보임 — `seat_ref.png`~`seat_ref3.png` 참고해서 배치/좌석 크기 개선, VIP/스탠딩 등 가격 등급 표시 추가.
-- `layout_ref` 이미지들 참조+조합해서 "지금 넣을 수 있는 정보"로만 레이아웃 구성.
-- 착수 전에 `docs/토근 복구되면 할 것.md`와 이미지들을 먼저 읽을 것.
+`docs/ui_ref/` 레퍼런스(`color_palette.jpg`, `layout_ref*.jpg`, `seat_ref*.png/jpg`) 기준으로 반영한 내용:
+- **컬러 팔레트/폰트**: 이미 `theme/tokens.ts`에 정확히 일치해서 변경 없음.
+- **좌석 배치도**(가장 명확했던 요청): `SeatGrid.tsx`를 대대적으로 개편 — 예매 가능 좌석을 등급별 색상으로 구분(`components/reservations/gradeColor.ts`가 가격 높은 순으로 액센트 컬러 배정), 좌석 셀을 쿠션처럼 보이는 모양으로 변경, 무대를 곡선 SVG로 표현, 좌우 행(row) 라벨 추가, 등급·가격 범례(`SeatGradeLegend.tsx`, 신규) 추가.
+- **공연 목록/상세**: `layout_ref*` 참고하되 우리 디자인 시스템의 "그림자 없음" 원칙은 유지 — 카테고리 칩, 아이콘이 있는 정보 카드 등 **실제로 있는 데이터**로만 정보 밀도를 높임(평점/리뷰처럼 없는 데이터는 추가 안 함).
+- 검증: 실 백엔드 없이 확인하려고 임시 `/__preview/seats` 라우트 + 픽스처 데이터로 Playwright 스크린샷 찍어 확인 후 완전히 제거함(커밋에 안 남음).
+- `web/frontend/docs/design-system.md` 6번 섹션에 등급-색 매핑 규칙 기록해둠.
+
+**다음에 더 해볼 만한 것** (이번엔 범위 밖으로 둠): 마이페이지/고객센터/관리자 화면은 이번 패스에서 손 안 댐(요청이 공연 목록·상세·좌석에 집중돼 있었음). `layout_ref`의 필터 사이드바·정렬 같은 무거운 패턴도 화면 성격상 적용 안 함 — 필요하면 사용자에게 먼저 확인.
 
 ## 7. 프로젝트 배경
 
