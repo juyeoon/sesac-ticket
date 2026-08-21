@@ -1,7 +1,6 @@
 import { Chip } from '@mui/material'
 
 /**
- * 실제 백엔드가 확인해준 값은 "ACTIVE"뿐이라, 나머지(UPCOMING/CLOSED 등)는 추측값이다.
  * 모르는 값이 오면 원문 그대로 회색 배지로 보여줘서 죽지 않게 한다.
  */
 const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
