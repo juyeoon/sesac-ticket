@@ -61,6 +61,8 @@ _PERFORMANCES = [
         "ticket_open_days": -3,
         "ticket_close_days": 27,
         "poster_file": "04_ballad.png",
+        # 예매 기간(오픈~마감)은 진행 중이지만, 회차 중 하나는 이미 지난 경우를 시드하기 위한 오버라이드.
+        "schedule_day_offsets": [-5, 7, 14],
     },
     {
         "title": "새싹 클래식 뮤지컬",
@@ -198,8 +200,11 @@ def seed(engine: Engine) -> None:
                 },
             )
 
-            for i in range(_SCHEDULES_PER_PERFORMANCE):
-                perf_date = date.today() + timedelta(days=7 * (i + 1))
+            schedule_day_offsets = performance_def.get("schedule_day_offsets") or [
+                7 * (i + 1) for i in range(_SCHEDULES_PER_PERFORMANCE)
+            ]
+            for offset_days in schedule_day_offsets:
+                perf_date = date.today() + timedelta(days=offset_days)
                 schedule_id = conn.execute(
                     text(
                         "INSERT INTO schedule "
