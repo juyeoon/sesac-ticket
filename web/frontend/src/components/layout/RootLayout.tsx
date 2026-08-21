@@ -116,11 +116,24 @@ export function RootLayout() {
         </Toolbar>
       </AppBar>
 
-      <Box component="main" sx={{ flex: 1 }}>
+      <Box component="main" sx={{ flex: 1, pb: { xs: 10, sm: 7 } }}>
         <Outlet />
       </Box>
 
-      <Box component="footer" sx={{ borderTop: 1, borderColor: 'divider', py: 3, mt: 4 }}>
+      <Box
+        component="footer"
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          width: '100%',
+          borderTop: 1,
+          borderColor: 'divider',
+          py: 1.5,
+          bgcolor: 'background.paper',
+          zIndex: (theme) => theme.zIndex.appBar,
+        }}
+      >
         <Container
           maxWidth="lg"
           sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 0.5, justifyContent: 'space-between' }}
