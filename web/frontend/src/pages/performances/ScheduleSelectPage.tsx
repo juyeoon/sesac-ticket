@@ -19,6 +19,10 @@ function isSoldOut(schedule: Schedule) {
   return schedule.seatGrades.every((g) => (g.remaining ?? 0) <= 0)
 }
 
+function isPast(schedule: Schedule) {
+  return dayjs(`${schedule.date}T${schedule.time}`).isBefore(dayjs())
+}
+
 export default function ScheduleSelectPage() {
   const { performanceId } = useParams()
   const id = Number(performanceId)
@@ -66,6 +70,8 @@ export default function ScheduleSelectPage() {
             <Stack spacing={1.5}>
               {items.map((schedule) => {
                 const soldOut = isSoldOut(schedule)
+                const past = isPast(schedule)
+                const disabled = soldOut || past
                 return (
                   <Card key={schedule.scheduleId} variant="outlined">
                     <CardContent
@@ -93,8 +99,8 @@ export default function ScheduleSelectPage() {
                         </Stack>
                       </Box>
                       <Button
-                        variant={soldOut ? 'outlined' : 'contained'}
-                        disabled={soldOut}
+                        variant={disabled ? 'outlined' : 'contained'}
+                        disabled={disabled}
                         onClick={() =>
                           navigate(`/schedules/${schedule.scheduleId}/seats`, {
                             state: {
@@ -105,7 +111,7 @@ export default function ScheduleSelectPage() {
                           })
                         }
                       >
-                        {soldOut ? '매진' : '선택'}
+                        {past ? '종료' : soldOut ? '매진' : '선택'}
                       </Button>
                     </CardContent>
                   </Card>
