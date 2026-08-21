@@ -79,6 +79,7 @@ class PerformanceDetailResponse(CamelModel):
     venue: VenueSummary
     seat_grades: list[SeatGradeInfo]
     images: list[PerformanceImageInfo]
+    status: str
 
 
 class ScheduleResponse(CamelModel):

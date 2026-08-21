@@ -9,6 +9,8 @@ const STATUS_META: Record<string, { label: string; bg: string; color: string }> 
   ON_SALE: { label: '예매중', bg: 'accent.greenSoft', color: 'accent.greenMain' },
   UPCOMING: { label: '오픈 예정', bg: 'accent.blueSoft', color: 'accent.blueMain' },
   CLOSED: { label: '판매 종료', bg: 'grey.100', color: 'text.disabled' },
+  ENDED: { label: '예매 종료', bg: 'grey.100', color: 'text.disabled' },
+  HIDDEN: { label: '비공개', bg: 'grey.100', color: 'text.disabled' },
 }
 
 export function StatusBadge({ status }: { status: string }) {

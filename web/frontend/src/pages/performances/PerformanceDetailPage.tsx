@@ -88,6 +88,18 @@ export default function PerformanceDetailPage() {
   const seed = String(data.id)
   const posterUrl = data.images[0]?.imageUrl ?? null
 
+  // 예매 가능 여부는 회차별 판매 상태(schedule.status)가 아니라 공연 전체의
+  // status(ACTIVE/HIDDEN/ENDED)로 판단한다 — "예매하기"는 회차 선택 전
+  // 공연 단위 진입 버튼이라 회차 단위 상태와는 별개다. 회차별 매진/마감
+  // 처리는 ScheduleSelectPage의 회차 카드 쪽 책임이라 여기서는 건드리지 않는다.
+  const isBookable = data.status === 'ACTIVE'
+  const bookButtonLabel =
+    data.status === 'ENDED'
+      ? '예매가 종료되었습니다'
+      : data.status === 'HIDDEN'
+        ? '예매할 수 없는 공연입니다'
+        : '예매하기'
+
   return (
     <Box>
       {/* 히어로 배너 — 포스터 아트를 배경으로 깔고 어두운 그러데이션 위에 타이틀을 얹는다 */}
@@ -169,10 +181,11 @@ export default function PerformanceDetailPage() {
                   variant="contained"
                   size="large"
                   fullWidth
+                  disabled={!isBookable}
                   sx={{ mb: 1.5 }}
                   onClick={() => requireAuth(() => navigate(`/performances/${id}/schedules`))}
                 >
-                  예매하기
+                  {bookButtonLabel}
                 </Button>
                 <Stack direction="row" spacing={1.5}>
                   <Button variant="outlined" fullWidth startIcon={<ShareOutlinedIcon />} onClick={handleShare}>

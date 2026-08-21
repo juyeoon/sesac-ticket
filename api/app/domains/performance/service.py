@@ -147,6 +147,7 @@ def get_performance_detail(db, performance_id):
             )
             for img in performance.images
         ],
+        status=performance.status,
     )
 
 

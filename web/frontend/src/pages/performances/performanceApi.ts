@@ -33,8 +33,7 @@ export interface PerformanceDetail {
   description: string | null
   ticketOpenAt: string | null
   ticketCloseAt: string | null
-  /** 공연 목록 조회에만 있고 상세 응답엔 없음 — 있으면 배지, 없으면 렌더링 생략 */
-  status?: string
+  status: string
   schedules: Schedule[]
   priceInfo: { minPrice: number; maxPrice: number }
   runningTimeMin: number | null
