@@ -143,7 +143,15 @@ def seed(engine: Engine) -> None:
         ).all()
 
         for performance_def in _PERFORMANCES:
+            ticket_open_at = now + timedelta(days=performance_def["ticket_open_days"])
             ticket_close_at = now + timedelta(days=performance_def["ticket_close_days"])
+            if ticket_close_at < now:
+                status = "ENDED"
+            elif ticket_open_at > now:
+                status = "UPCOMING"
+            else:
+                status = "ACTIVE"
+
             performance_id = conn.execute(
                 text(
                     "INSERT INTO performance "
@@ -158,11 +166,11 @@ def seed(engine: Engine) -> None:
                     "category_id": category_ids[performance_def["category"]],
                     "description": performance_def["description"],
                     "venue_id": venue_id,
-                    "ticket_open_at": now + timedelta(days=performance_def["ticket_open_days"]),
+                    "ticket_open_at": ticket_open_at,
                     "ticket_close_at": ticket_close_at,
                     "running_time_min": performance_def["running_time_min"],
                     "age_limit": performance_def["age_limit"],
-                    "status": "ENDED" if ticket_close_at < now else "ACTIVE",
+                    "status": status,
                     "created_at": now,
                 },
             ).lastrowid
