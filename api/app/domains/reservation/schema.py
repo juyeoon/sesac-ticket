@@ -141,6 +141,7 @@ class MyReservationItem(_CamelModel):
     performance_title: str
     date: date_
     status: str
+    confirmed_at: UtcDateTime | None
 
 
 class MyReservationListResponse(_CamelModel):

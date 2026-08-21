@@ -5,6 +5,7 @@ export interface MyReservationListItem {
   performanceTitle: string
   date: string
   status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'
+  confirmedAt: string | null
 }
 
 export const reservationsApi = {

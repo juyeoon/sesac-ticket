@@ -66,11 +66,18 @@ export default function MyReservationsPage() {
                   {r.date ? dayjs(r.date).format('YYYY.MM.DD (ddd)') : ''} · 예매번호 {r.reservationId}
                 </Typography>
               </Stack>
-              <Chip
-                label={STATUS_LABEL[r.status] ?? r.status}
-                color={r.status === 'CONFIRMED' ? 'primary' : undefined}
-                variant={r.status === 'CONFIRMED' ? 'filled' : 'outlined'}
-              />
+              <Stack spacing={0.5} sx={{ alignItems: 'flex-end' }}>
+                <Chip
+                  label={STATUS_LABEL[r.status] ?? r.status}
+                  color={r.status === 'CONFIRMED' ? 'primary' : undefined}
+                  variant={r.status === 'CONFIRMED' ? 'filled' : 'outlined'}
+                />
+                {r.confirmedAt && (
+                  <Typography variant="caption" color="text.secondary">
+                    {new Date(r.confirmedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} 확정
+                  </Typography>
+                )}
+              </Stack>
             </Stack>
           </CardContent>
         </Card>
