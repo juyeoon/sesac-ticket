@@ -25,37 +25,47 @@ _PERFORMANCES = [
     {
         "title": "새싹 콘서트 2026",
         "category": "콘서트",
-        "description": "2026 새싹티켓 시드 공연 1",
+        "description": "2026 새싹티켓 시드 공연 1 (예매중)",
         "running_time_min": 120,
         "age_limit": "12세 이상",
+        "ticket_open_days": -7,  # 7일 전 오픈
+        "ticket_close_days": 23,  # 23일 후 마감
     },
     {
         "title": "새싹 뮤지컬 나이트",
         "category": "뮤지컬",
-        "description": "2026 새싹티켓 시드 공연 2",
+        "description": "2026 새싹티켓 시드 공연 2 (예매 종료)",
         "running_time_min": 150,
         "age_limit": "전체 관람가",
+        "ticket_open_days": -40,
+        "ticket_close_days": -10,  # 10일 전 마감됨
     },
     {
         "title": "새싹 재즈 페스티벌",
         "category": "콘서트",
-        "description": "2026 새싹티켓 시드 공연 3",
+        "description": "2026 새싹티켓 시드 공연 3 (예매 오픈 전)",
         "running_time_min": 100,
         "age_limit": "전체 관람가",
+        "ticket_open_days": 10,  # 10일 후 오픈
+        "ticket_close_days": 40,
     },
     {
         "title": "새싹 발라드 콘서트",
         "category": "콘서트",
-        "description": "2026 새싹티켓 시드 공연 4",
+        "description": "2026 새싹티켓 시드 공연 4 (예매중)",
         "running_time_min": 110,
         "age_limit": "12세 이상",
+        "ticket_open_days": -3,
+        "ticket_close_days": 27,
     },
     {
         "title": "새싹 클래식 뮤지컬",
         "category": "뮤지컬",
-        "description": "2026 새싹티켓 시드 공연 5",
+        "description": "2026 새싹티켓 시드 공연 5 (예매 종료)",
         "running_time_min": 140,
         "age_limit": "전체 관람가",
+        "ticket_open_days": -60,
+        "ticket_close_days": -20,
     },
 ]
 
@@ -135,8 +145,8 @@ def seed(engine: Engine) -> None:
                     "category_id": category_ids[performance_def["category"]],
                     "description": performance_def["description"],
                     "venue_id": venue_id,
-                    "ticket_open_at": now,
-                    "ticket_close_at": now + timedelta(days=30),
+                    "ticket_open_at": now + timedelta(days=performance_def["ticket_open_days"]),
+                    "ticket_close_at": now + timedelta(days=performance_def["ticket_close_days"]),
                     "running_time_min": performance_def["running_time_min"],
                     "age_limit": performance_def["age_limit"],
                     "status": "ACTIVE",
