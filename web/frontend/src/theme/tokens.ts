@@ -49,6 +49,11 @@ export const seat = {
   heldBg: neutral.gray50,
   heldBorder: neutral.gray200,
   heldText: neutral.gray400,
+  // PENDING_PAYMENT: 예매 접수됐지만 관리자 확정 전 — "입금대기중". HELD/RESERVED와
+  // 구분되는 색이 필요해서 Vanilla(accent.yellowSoft)를 씀.
+  pendingPaymentBg: accent.yellowSoft,
+  pendingPaymentBorder: accent.yellowMain,
+  pendingPaymentText: accent.yellowMain,
   reservedBg: neutral.gray100,
   reservedText: neutral.gray300,
 } as const

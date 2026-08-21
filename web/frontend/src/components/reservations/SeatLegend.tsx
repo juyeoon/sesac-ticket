@@ -4,6 +4,7 @@ import { seat as seatTokens } from '../../theme/tokens'
 const ITEMS = [
   { label: '선택중', bg: seatTokens.selectedBg, border: seatTokens.selectedBg },
   { label: '선점중', bg: seatTokens.heldBg, border: seatTokens.heldBorder },
+  { label: '입금대기중', bg: seatTokens.pendingPaymentBg, border: seatTokens.pendingPaymentBorder },
   { label: '예매 완료', bg: seatTokens.reservedBg, border: seatTokens.reservedBg },
 ]
 

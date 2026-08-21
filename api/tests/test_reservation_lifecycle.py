@@ -104,7 +104,7 @@ def test_create_reservation_success(db_session):
     assert result.bank_account_info
 
     statuses = service.get_seat_status_list(db_session, schedule_id)
-    assert all(item.status == "RESERVED" for item in statuses if item.seat_id in seat_ids)
+    assert all(item.status == "PENDING_PAYMENT" for item in statuses if item.seat_id in seat_ids)
 
 
 def test_create_reservation_fails_for_hold_not_found(db_session):
@@ -137,7 +137,7 @@ def test_create_reservation_fails_for_expired_hold(db_session):
 
 
 def test_confirm_reservation_success(db_session):
-    _, _, hold_id = _create_hold(db_session, title="resv-confirm")
+    schedule_id, seat_ids, hold_id = _create_hold(db_session, title="resv-confirm")
     created = service.create_reservation(
         db_session, member_id=1, hold_id=hold_id, depositor_name="홍길동"
     )
@@ -148,6 +148,9 @@ def test_confirm_reservation_success(db_session):
 
     assert result.status == "CONFIRMED"
     assert result.confirmed_at is not None
+
+    statuses = service.get_seat_status_list(db_session, schedule_id)
+    assert all(item.status == "RESERVED" for item in statuses if item.seat_id in seat_ids)
 
 
 def test_confirm_reservation_fails_for_already_confirmed(db_session):

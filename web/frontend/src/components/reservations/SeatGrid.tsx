@@ -29,6 +29,8 @@ const LABEL_W = 18
 function seatStyle(status: SeatStatus, isSelected: boolean, gradeColor: GradeColor) {
   if (isSelected) return { bgcolor: seatTokens.selectedBg, border: `1px solid ${seatTokens.selectedBg}` }
   if (status === 'RESERVED') return { bgcolor: seatTokens.reservedBg, border: `1px solid ${seatTokens.reservedBg}` }
+  if (status === 'PENDING_PAYMENT')
+    return { bgcolor: seatTokens.pendingPaymentBg, border: `1px solid ${seatTokens.pendingPaymentBorder}` }
   if (status === 'HELD') return { bgcolor: seatTokens.heldBg, border: `1px solid ${seatTokens.heldBorder}` }
   return { bgcolor: gradeColor.soft, border: `1px solid ${gradeColor.main}66` }
 }

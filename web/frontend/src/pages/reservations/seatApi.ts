@@ -15,7 +15,11 @@ export interface VenueSeatMap {
   sections: { sectionName: string; seats: VenueSeat[] }[]
 }
 
-export type SeatStatus = 'AVAILABLE' | 'HELD' | 'RESERVED'
+// PENDING_PAYMENT: 예매 생성됨(무통장입금 접수) but 관리자 확정 전 — 백엔드가
+// 2026-08-21부터 HELD -> PENDING_PAYMENT -> RESERVED 3단계로 분리함(이전엔
+// 예매 생성 즉시 RESERVED였음). 화면에선 선점중(HELD)과 유사하게 선택 불가로
+// 표시하되 라벨만 "입금대기중"으로 구분한다.
+export type SeatStatus = 'AVAILABLE' | 'HELD' | 'PENDING_PAYMENT' | 'RESERVED'
 
 export interface ScheduleSeat {
   seatId: number

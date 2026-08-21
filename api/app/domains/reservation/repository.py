@@ -16,7 +16,12 @@
 - get_schedule_seats_with_seat_info(db, schedule_id) -> list[dict]
     schedule_seat를 venue_seat와 JOIN해서 section/row/number까지 포함한 좌석 목록 반환.
 - mark_hold_converted(db, hold_log) -> None
+- mark_seats_pending_payment(db, seat_ids) -> None
+    예매 생성 시점(RESV-004) — HELD -> PENDING_PAYMENT. 관리자 확정 전까지는
+    이 상태로 남아 프론트가 "입금대기중"으로 구분해서 보여줄 수 있게 한다.
 - mark_seats_reserved(db, seat_ids) -> None
+    관리자 확정 시점(RESV-005) — PENDING_PAYMENT -> RESERVED. 여기서 비로소
+    "예매 완료" 확정.
 - create_reservation_with_payment(db, *, ...) -> Reservation
     reservation/reservation_seat/bank_transfer_payment를 한 트랜잭션으로 INSERT (RESV-004).
 - get_reservation_by_id(db, reservation_id) -> Reservation | None
@@ -143,6 +148,15 @@ def get_expired_holding_holds(db: Session, *, now: datetime) -> list[SeatHoldLog
         SeatHoldLog.expires_at < now,
     )
     return list(db.execute(stmt).scalars().all())
+
+
+def mark_seats_pending_payment(db: Session, seat_ids: list[int]) -> None:
+    seats = db.execute(
+        select(ScheduleSeat).where(ScheduleSeat.id.in_(seat_ids))
+    ).scalars().all()
+    for seat in seats:
+        seat.status = "PENDING_PAYMENT"
+    db.commit()
 
 
 def mark_seats_reserved(db: Session, seat_ids: list[int]) -> None:

@@ -9,7 +9,10 @@
 - invalidate_seat_status_cache(schedule_id) -> None
     Hold 생성/해제 시 캐시를 무효화해 다음 조회에서 최신 상태로 재구성되게 한다.
 - create_reservation(db, *, member_id, hold_id, depositor_name) -> CreateReservationResponse
+    좌석 상태를 HELD -> PENDING_PAYMENT로 전환 (아직 RESERVED 아님 — 관리자 확정 전).
 - confirm_reservation(db, *, reservation_id, admin_id) -> ConfirmReservationResponse
+    좌석 상태를 PENDING_PAYMENT -> RESERVED로 전환. 여기서 비로소 좌석이 최종
+    확정된다 — 프론트가 "입금대기중"과 "예매 완료"를 구분해서 보여줄 수 있게 함.
 - expire_reservation(db, reservation) -> None
     reservation_sweeper 전용. 입금기한(payment_due_at)이 지난 PENDING_PAYMENT 예매를
     EXPIRED로 전환 + 좌석 AVAILABLE 복구 + 좌석상태 캐시 무효화.
@@ -132,7 +135,7 @@ def create_reservation(
         bank_account_info=settings.bank_account_info,
         payment_due_at=payment_due_at,
     )
-    repository.mark_seats_reserved(db, hold_log.schedule_seat_ids)
+    repository.mark_seats_pending_payment(db, hold_log.schedule_seat_ids)
     repository.mark_hold_converted(db, hold_log)
     invalidate_seat_status_cache(hold_log.schedule_id)
 
@@ -162,6 +165,10 @@ def confirm_reservation(
         payment.confirmed_by_admin_id = admin_id
         payment.confirmed_at = confirmed_at
     db.commit()
+
+    seat_ids = repository.get_reservation_seat_ids(db, reservation_id)
+    repository.mark_seats_reserved(db, seat_ids)
+    invalidate_seat_status_cache(reservation.schedule_id)
 
     return ConfirmReservationResponse(
         reservation_id=reservation.id,

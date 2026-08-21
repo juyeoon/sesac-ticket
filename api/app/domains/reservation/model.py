@@ -49,7 +49,7 @@ class ScheduleSeat(Base):
     venue_seat_id: Mapped[int] = mapped_column(ForeignKey("venue_seat.id"), nullable=False)
     grade: Mapped[str]
     price: Mapped[int]
-    status: Mapped[str]  # AVAILABLE, HELD, RESERVED
+    status: Mapped[str]  # AVAILABLE, HELD, PENDING_PAYMENT, RESERVED
 
 
 class SeatHoldLog(Base):
