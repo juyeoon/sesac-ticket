@@ -76,7 +76,7 @@ export function RootLayout() {
             variant="h6"
             sx={{ fontWeight: 700, textDecoration: 'none', color: 'text.primary', flexShrink: 0 }}
           >
-            새싹티켓
+            새싹티켓!
           </Typography>
 
           <TextField
@@ -99,7 +99,11 @@ export function RootLayout() {
             }}
           />
 
-          <Box sx={{ flexGrow: 1 }} />
+          <Box sx={{ flex: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
+            <SystemInfoBadge />
+          </Box>
+
+          <Box sx={{ flexGrow: 1, display: { xs: 'block', md: 'none' } }} />
 
           {isAuthenticated ? (
             <UserMenu />
@@ -116,32 +120,15 @@ export function RootLayout() {
         </Toolbar>
       </AppBar>
 
-      <Box component="main" sx={{ flex: 1, pb: { xs: 10, sm: 7 } }}>
+      <Box component="main" sx={{ flex: 1 }}>
         <Outlet />
       </Box>
 
-      <Box
-        component="footer"
-        sx={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          width: '100%',
-          borderTop: 1,
-          borderColor: 'divider',
-          py: 1.5,
-          bgcolor: 'background.paper',
-          zIndex: (theme) => theme.zIndex.appBar,
-        }}
-      >
-        <Container
-          maxWidth="lg"
-          sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 0.5, justifyContent: 'space-between' }}
-        >
+      <Box component="footer" sx={{ borderTop: 1, borderColor: 'divider', py: 1.5, bgcolor: 'background.paper' }}>
+        <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'center' }}>
           <Typography variant="caption" color="text.secondary">
             © 2026 새싹티켓 · 새싹 티켓팅 프로그램 프로젝트
           </Typography>
-          <SystemInfoBadge />
         </Container>
       </Box>
     </Box>

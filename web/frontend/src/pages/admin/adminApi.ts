@@ -12,11 +12,30 @@ export interface ConfirmBankTransferResult {
   confirmedAt: string
 }
 
+export interface AdminReservationSeatItem {
+  section: string
+  row: string
+  number: number
+  grade: string
+  price: number
+}
+
+export interface AdminReservationListItem {
+  reservationId: number
+  status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'
+  confirmedAt: string | null
+  depositorName: string | null
+  member: { memberId: number; nickname: string; email: string }
+  performance: { performanceId: number; title: string }
+  schedule: { scheduleId: number; date: string; time: string }
+  seats: AdminReservationSeatItem[]
+}
+
 export const adminApi = {
   login: (adminId: string, password: string) =>
     adminApiClient.post<AdminAccessTokenResult>('/admin/auth/login', { adminId, password }),
-  // 관리자가 예매 상세를 조회하는 API 자체가 없어서(회원 전용 엔드포인트라 admin 토큰으론
-  // 403/401), 예매번호를 직접 입력받아 확정만 할 수 있다 — RESV-005 그대로.
+  // GET /reservations/list — 관리자 전용 전체 예매 목록 (페이지네이션 없음).
+  listReservations: () => adminApiClient.get<AdminReservationListItem[]>('/reservations/list'),
   confirmBankTransfer: (reservationId: number) =>
     adminApiClient.post<ConfirmBankTransferResult>(`/reservations/bank-transfer/${reservationId}/confirm`),
 }

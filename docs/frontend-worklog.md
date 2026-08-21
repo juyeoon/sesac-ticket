@@ -201,3 +201,52 @@ ZPOPMIN 우회로 대기열은 뚫렸는데, 그 다음 좌석 선택 화면이 
 - MUI의 `Avatar`/`IconButton`은 라이브러리 자체 기본 스타일로 원형이라 우리 `theme.shape`/토큰이 안 먹혀서, `theme.ts`에 `MuiAvatar`/`MuiIconButton` 컴포넌트 오버라이드를 새로 추가해서 `borderRadius: 0`을 강제함 — 헤더 아바타, 마이페이지 프로필 아바타, 좋아요 아이콘 버튼 등 라이브러리 기본 원형에 의존하던 곳까지 전부 각지게 통일됨.
 - `docs/design-system.md` 4·5번 섹션을 "radius는 전부 0" 원칙으로 다시 씀 — 새 컴포넌트에서 `borderRadius`를 직접 하드코딩하지 말고 항상 토큰(결국 0)을 참조하라고 명시(재발 방지).
 - Playwright로 로그인/홈/상세/마이페이지/좌석선택 화면을 스크린샷으로 재확인 — 버튼, 칩, 검색창, 히어로 배너, 카테고리 배지, 아바타, 좌석 셀까지 전부 각진 사각형으로 나오는 것 확인 후 스크립트/브라우저 제거.
+
+## 2026-08-21
+
+### `feature/integration3`로 이관 — 백엔드팀이 프론트+백엔드 통합
+사용자가 "어제 작업까지 통합해서 `feature/integration3`에 올려줬다, 그대로 pull 받아서 진행하자"고 함. `git fetch`로 확인해보니 실제로 origin에 새 브랜치가 생겨있었고, 로그를 까보니 우리 최신 커밋(그림자·radius 폐지까지)이 이미 그 안에 merge돼 있었음 — 그 위에 백엔드팀이 추가한 것들도 확인함(실제 포스터 이미지 연동, `PENDING_PAYMENT` 좌석 상태 신설, 관리자 무통장입금 확정 화면, 푸터 하단 고정, 선점 실패 UX 수정). `git diff feature/ui origin/feature/integration3`로 프론트 변경분만 미리 다 읽어보고 나서 전환을 진행함.
+
+### 히어로 이미지 버그 — 원인을 사전에 diff로 찾아냄
+사용자가 "정적데이터 넣었을 때 사진 삽입은 다 되는데 히어로섹션만 메인 화면에서 안 보이고 클릭해서 들어갔을 때만 보인다"고 전달함. `feature/integration3`로 전환하기 전에 diff만으로 원인을 먼저 찾아냄: `PlaceholderImage`에 실제 이미지용 `src` prop이 추가됐고 `PerformanceCard`/`PerformanceDetailPage`엔 연동됐는데, `PerformanceListPage.tsx`의 `HeroBanner`만 그 수정에서 빠져서 여전히 `src` 없이 호출되고 있었음(항상 그러데이션 폴백으로 떨어짐). 전환 완료 후 `<PlaceholderImage seed={...} fill />`을 `<PlaceholderImage seed={...} fill src={performance.thumbnailUrl} />`로 수정.
+
+### 별도 backend clone과 메인 저장소의 경로 충돌 발견·해소
+`feature/ui`는 `api/` 폴더를 전혀 추적하지 않아서, 그동안 `sesac-ticket/api/`에 완전히 별도인 backend 전용 clone(자체 `.git`, `feature/integration2` 체크아웃)을 두고 써왔음. 그런데 `feature/integration3`는 프론트 저장소 쪽에도 `api/`를 새로 추적하기 시작해서, 메인 저장소를 `feature/integration3`로 체크아웃하자 그 별도 clone이 이미 들어있던 바로 그 자리(`sesac-ticket/api/`)에 메인 저장소가 자기 몫의 `api/app/...` 파일들을 그대로 써버림 — 결과적으로 한 폴더 안에 두 저장소의 체크아웃 결과가 뒤섞임(`git status`에 `api/api/`, `api/docs/`, `api/web/` 같은 이상한 중첩 폴더가 untracked로 나타남, `uv sync`가 이상하게 동작한 게 아니라 이미 그 자리에 메인 저장소가 깔아둔 `pyproject.toml`을 정상적으로 주워서 쓴 것뿐이었음).
+
+원인을 `git ls-tree`로 양쪽 브랜치 최상위 구조를 비교해가며 정확히 특정한 뒤, **별도 clone은 완전히 폐지**하기로 결정 — 애초에 별도 clone을 뒀던 이유(프론트/백엔드가 다른 브랜치라 한 저장소에서 동시에 체크아웃 못 함) 자체가 `feature/integration3` 통합으로 사라졌기 때문. 사용자가 별도 clone 전용 파일(`.git`, `.gitignore`, `README.md`, 중첩된 `api/`, `docs/`, `web/`)만 골라서 삭제하고, 메인 저장소가 체크아웃한 파일은 그대로 둠. 그 후 `git status`에 노이즈처럼 남은 `M api/uv.lock`(내용 확인해보니 실 의존성 변경이 아니라 `uv sync`가 lockfile을 통째로 재정렬한 것뿐이었음)도 `git checkout`으로 되돌림.
+
+### 로컬 redis 우회 패치 재적용 + `.env` 재설정
+별도 clone을 지우고 메인 저장소의 클린한 `api/app/...`로 넘어오면서 두 우회 패치(ZPOPMIN, 다중 필드 HSET)가 원래 코드로 돌아가 있길래 다시 적용함(내용은 기존과 동일, 경로만 `api/api/app/...` → `api/app/...`로 한 단계 얕아짐). `.env`도 새 위치(`sesac-ticket/api/.env`)에 다시 만들어야 했는데, 사용자가 "급해서 팀 채팅 시크릿 그대로 쓸게, 프로덕션에서는 바꿀 거야"라고 명시적으로 판단함 — 평소 원칙(매번 랜덤 생성)과 다른 예외지만 사용자 본인의 명시적 시간-압박 판단이라 그대로 진행, `frontend-handoff.md`에 다음 세션에서 되돌리는 걸 권장하는 메모 남겨둠.
+
+### 대기열/좌석 버그가 로컬 전용이라는 것 재확인
+사용자가 배포팀에 확인해본 결과 "어제 있었던 대기열 등 버그는 로컬에서만 있는 것 같다, 클라우드 배포 환경에서는 동작 잘한다"고 전달함 — 로컬 Docker Valkey 7.2 + redis-py 8.1.0 조합에서만 나는 환경 문제라는 우리 쪽 원인 분석과 정확히 일치. 백엔드팀에 급하게 고쳐달라고 요청할 필요는 없고, 로컬 개발 계속하려면 우리 쪽 우회 패치만 유지하면 됨.
+
+### 추가 pull 1건 반영
+사용자가 위 정리를 마친 뒤 "pull 한번 더 받아야 한다"고 해서 fetch해보니 origin에 커밋 1개(`서버 식별을 .env 라벨 대신 실측 IP 기반으로 전환`)가 더 있었음 — `api/.env.example`에서 이제 안 쓰는 `INSTANCE_ID`/`INSTANCE_AZ` 두 줄만 빠지는 작은 변경이라 로컬 워킹트리 깨끗한 상태에서 바로 fast-forward pull 진행.
+
+### 서버 미기동 상태로 세션 종료
+별도 clone 정리 작업 때문에 이번 세션엔 로컬 백엔드(Docker/uvicorn/워커)를 다시 띄우지 못하고 끝남 — 다음 세션 시작할 때 `frontend-handoff.md` 3번 섹션의 재기동 명령어로 처음부터 새로 띄워야 함(경로가 `api/api` → `api`로 한 단계 얕아진 것 주의).
+
+### UI 세부 피드백 5건 반영 + 로컬 서버 기동 트러블슈팅
+같은 세션에서 이어서 5가지 UI 피드백을 받아 전부 반영함:
+1. **좌석 색상/간격**: `HELD`(gray50)와 `RESERVED`(gray100)가 둘 다 옅은 회색이라 구분 안 됨 — `tokens.ts`에서 `heldBg`를 gray200, `reservedBg`를 gray500(+ 텍스트 흰색)으로 명도 차이를 크게 벌림. `SeatGrid.tsx`의 `GAP`을 2px→4px로 넓힘(45열 기준 가로 스크롤 안 생기는 선에서).
+2. **서버 정보 배지**: 제출 필수조건(Front/Server 버전, 서버 IP)이 푸터에 캡션 텍스트로 묻혀있던 걸 헤더로 옮기고 골드색(`accent.yellowMain`) 배지로 눈에 띄게 만듦(`SystemInfoBadge.tsx` 재작성, `RootLayout.tsx`의 AppBar 안 Toolbar 위에 별도 줄로 배치).
+3. **좌석선택 페이지 하단바 잘림**: `feature/integration3`에서 전역 footer가 `position: fixed`로 바뀐 것과 `SeatSelectPage.tsx` 자체의 고정 액션바가 똑같이 `bottom: 0`이라 겹쳐서 잘려 보였음 — 액션바를 `bottom: 56`(footer 높이만큼)으로 띄우고, footer가 이제 한 줄(배지 이동으로 카피라이트만 남음)이라 `RootLayout.tsx`의 main `pb`도 반응형(`{xs:10,sm:7}`) → 고정값(`7`)으로 단순화.
+4. **공유 모달 UX**: "링크가 복사되었습니다" 텍스트 삭제, 복사 버튼 클릭 시 초록색+체크 아이콘+"복사 완료"로 바뀌었다가 1.8초 후 원상복구되는 애니메이션 추가(`ShareDialog.tsx`, `useState` + `setTimeout`). Playwright 헤드리스 기본 설정은 클립보드 권한이 없어서 처음 캡처했을 때 버튼이 안 바뀌는 것처럼 보였는데, `permissions: ['clipboard-write']` 줘서 재확인하니 정상 동작 확인함 — 테스트 환경 한계였을 뿐 실제 버그 아니었음.
+5. **파비콘/로그인 이미지**: 사용자가 `public/favicon.ico`, `public/login-image.webp`를 직접 올려둠 — `index.html`의 favicon 링크를 기존 `favicon.svg`에서 `favicon.ico`로 교체, `AuthCard.tsx` 왼쪽 패널의 `PlaceholderImage` 그러데이션을 실제 `login-image.webp`로 교체.
+
+**로컬 서버 기동 중 겪은 문제 두 가지** (앞으로도 반복될 수 있어 기록):
+- **`.env`에 프로덕션 내부 호스트가 그대로 들어있었음**: 사용자가 급하게 팀 채팅 값을 그대로 써서 `.env`를 새로 만들었는데, `VALKEY_MASTER_HOST`/`VALKEY_REPLICA_HOST`가 `cache.sstk.internal`, `DB_WRITER_URL`/`DB_READER_URL`의 호스트가 `db.sstk.internal`로 돼 있어서(로컬에서 resolve 안 되는 내부 DNS) 워커가 즉시 `getaddrinfo failed`로 죽음. 로컬 Docker 컨테이너를 가리키도록 두 Valkey 호스트와 DB URL 호스트를 `127.0.0.1`로 고침(계정/비밀번호는 그대로 둠, 다만 로컬 MySQL 컨테이너엔 애초에 `sesac` 앱 계정이 없어서 `root:sesacroot`로도 같이 바꿔야 했음 — 로컬 컨테이너 자체가 `MYSQL_ROOT_PASSWORD`만 세팅돼 있고 별도 앱 유저를 안 만든 상태였음). `COOKIE_SECURE=true`(프로덕션용)도 로컬 http 개발엔 안 맞아서 `false`로 고침.
+- **오래된 좀비 프로세스가 대기열 dispatcher를 막고 있었음**: 세션 내내 여러 번 백그라운드로 띄웠던 uvicorn/워커 프로세스들이 안 죽고 계속 쌓여있었음(`tasklist`로 확인하니 python.exe 11개). 그중 오래된 dispatcher 인스턴스가 leader election 락(`worker:lock:queue_dispatcher`)을 쥔 채로 멈춰있어서, 새로 띄운 dispatcher가 락을 못 얻고 조용히 아무것도 안 하고 있었음(에러 로그도 안 남아서 원인 찾기 오래 걸림). 좀비 프로세스 전부 `taskkill`로 정리하고 Valkey `FLUSHALL`로 깨끗하게 비운 뒤 재기동하니 대기열이 다시 정상적으로 `READY`까지 전환됨. **다음에 로컬 대기열이 이유 없이 안 움직이면, 새 프로세스를 또 띄우기 전에 먼저 기존 python.exe들을 다 정리하고 시작할 것.**
+- 정리 후 curl로 로그인 → 대기열 진입 → `READY` 전환 → 좌석 상태 조회(`GET /schedules/1/seats`)까지 전부 재검증 완료. Playwright로 홈/좌석선택/공유모달/로그인 화면 스크린샷 확인 후 제거.
+
+**참고**: 로그인 화면의 `login-image.webp`에 옅은 워터마크 텍스트가 보임(스톡 이미지 출처 표시로 추정) — 실제 제출/배포 전에 라이선스 확인하거나 다른 이미지로 교체가 필요할 수 있음, 사용자에게 별도로 안내함.
+
+### 후속 피드백 4건 — 좌석 3상태로 단순화, 헤더 배지 버튼화, 예매 상태 버그(백엔드로 위임), 푸터 원복
+바로 이어서 추가 피드백을 받음:
+1. **좌석 상태 3가지로 단순화**: 직전에 넣었던 입금대기중(PENDING_PAYMENT) 전용 색을 없애고 예매완료와 동일하게 처리 — "입금대기중을 추가하라는 말이 아니었다"는 피드백. 대신 예매완료 색을 훨씬 짙은 회색(gray600, 검정보다는 옅게)으로 바꾸고 칸 안에 X 아이콘(`CloseIcon`)을 추가해서 선점중과 확실히 구분되게 함. `SeatLegend.tsx`도 같이 정리(입금대기중 항목 제거, 예매완료 스와치에 X 추가).
+2. **헤더 배지를 버튼 형태로 재설계**: 별도 줄로 넣었던 골드 배지 하나를 없애고, 기존 Toolbar 안에 로그인/회원가입과 동일한 버튼 규격(패딩/radius)의 버튼 3개(Front/Server/X-Forwarded-For 각각)로 분리, 검색창과 로그인 버튼 사이 중앙에 배치. 버전 표기가 front 0.1.0 vs server 1.0.0으로 다른 것에 대한 질문을 받아서, 버전은 마일스톤마다 수동으로 올리는 게 정상 관행이라고 설명하고 프론트도 기능 완성 상태에 맞춰 `package.json`을 1.0.0으로 올림.
+3. **예매 상태별 예매하기 버튼 활성화/비활성화**: 조사해보니 백엔드 `performance/repository.py`의 상세 조회 쿼리가 `status == 'ACTIVE'`로 필터링돼 있어서 종료된 공연이 아예 404가 나고, 상세 응답에 `status` 필드 자체도 없는 게 원인 — 실수로 백엔드 파일 3개(`repository.py`/`schema.py`/`service.py`)를 고쳤다가 "백엔드는 절대 건드리지 말라"는 강한 항의를 받고 즉시 `git checkout`으로 전부 원복함. 이후 이 문제는 백엔드팀에 맡기기로 확정(사용자가 이미 DB의 잘못된 status 데이터도 직접 고치는 중이었음).
+4. **푸터 원복**: `position: fixed`를 걷어내고 일반 문서 흐름으로 되돌림 — 필수 정보가 헤더로 옮겨간 이상 푸터가 항상 떠 있을 필요가 없다는 판단. 좌석선택 페이지의 고정 액션바도 `bottom: 56`(footer 회피용)에서 원래의 `bottom: 0`으로 되돌림.
+- 이 라운드 도중 사용자가 `tokens.ts`/`RootLayout.tsx`/`SystemInfoBadge.tsx`/`index.html`을 동시에 직접 수정하고 있는 걸 발견 — 다른 포맷터(큰따옴표/세미콜론)를 쓰고 있었고 `tokens.ts`에 미완성으로 보이는 `redAccent: ""` 필드를 추가해둔 상태였음. 충돌 방지를 위해 그 파일들은 그대로 두고 사용자에게만 알림.
+- 이후 origin에 새 커밋 3개(관리자 무통장입금 확정 화면을 예매번호 직접 입력 대신 전체 목록에서 고르는 방식으로 개선, `perf_seed`의 예매 마감일 지난 공연이 ACTIVE로 잘못 들어가던 버그 수정)가 올라와서 pull 요청받음 — 겹치는 파일이 하나도 없는 걸 미리 diff로 확인하고 `git pull`을 바로 진행하도록 안내, 충돌 없이 병합 완료.

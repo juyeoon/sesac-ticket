@@ -34,7 +34,7 @@ export default function LoginPage() {
 
   return (
     <AuthCard
-      title="처음 오셨나요?"
+      title="환영합니다!"
       description="이메일로 로그인하여 서비스를 이용하세요."
       footer={
         <Typography variant="body2">

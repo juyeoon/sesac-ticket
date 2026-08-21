@@ -34,7 +34,7 @@ function HeroBanner({ performance }: { performance: PerformanceListItem }) {
         flex: 1,
       }}
     >
-      <PlaceholderImage seed={String(performance.id)} fill />
+      <PlaceholderImage seed={String(performance.id)} fill src={performance.thumbnailUrl} />
       <Box
         sx={{
           position: 'absolute',

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Box, Typography } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
 import { seat as seatTokens, neutral } from '../../theme/tokens'
 import type { SeatStatus } from '../../pages/reservations/seatApi'
 import { getGradeColor, type GradeColor } from './gradeColor'
@@ -23,14 +24,18 @@ interface SeatGridProps {
 
 // 좌석 수가 실제로 많을 수 있어(예: 45열) 셀을 작게 잡아야 가로 스크롤 없이 한 화면에 들어온다.
 const CELL = 18
-const GAP = 2
+const GAP = 4
 const LABEL_W = 18
+
+// 좌석 배치도에는 선택중/선점중/예매완료 3가지 상태만 구분해서 보여준다.
+// PENDING_PAYMENT(입금대기중)는 좌석을 고를 수 없다는 점에서 예매완료와 동일하게 취급한다.
+function isReservedLook(status: SeatStatus) {
+  return status === 'RESERVED' || status === 'PENDING_PAYMENT'
+}
 
 function seatStyle(status: SeatStatus, isSelected: boolean, gradeColor: GradeColor) {
   if (isSelected) return { bgcolor: seatTokens.selectedBg, border: `1px solid ${seatTokens.selectedBg}` }
-  if (status === 'RESERVED') return { bgcolor: seatTokens.reservedBg, border: `1px solid ${seatTokens.reservedBg}` }
-  if (status === 'PENDING_PAYMENT')
-    return { bgcolor: seatTokens.pendingPaymentBg, border: `1px solid ${seatTokens.pendingPaymentBorder}` }
+  if (isReservedLook(status)) return { bgcolor: seatTokens.reservedBg, border: `1px solid ${seatTokens.reservedBg}` }
   if (status === 'HELD') return { bgcolor: seatTokens.heldBg, border: `1px solid ${seatTokens.heldBorder}` }
   return { bgcolor: gradeColor.soft, border: `1px solid ${gradeColor.main}66` }
 }
@@ -128,6 +133,9 @@ export function SeatGrid({ seats, selectedSeatIds, onToggle, gradeColors }: Seat
                 gridRow: row,
                 width: CELL,
                 height: CELL,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 userSelect: 'none',
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 opacity: disabled ? 0.5 : 1,
@@ -137,7 +145,11 @@ export function SeatGrid({ seats, selectedSeatIds, onToggle, gradeColors }: Seat
                 '&:hover': disabled ? undefined : { outlineColor: neutral.eerieBlack },
                 ...style,
               }}
-            />
+            >
+              {isReservedLook(seat.status) && !isSelected && (
+                <CloseIcon sx={{ fontSize: CELL - 4, color: seatTokens.reservedText }} />
+              )}
+            </Box>
           )
         })}
       </Box>
