@@ -34,9 +34,12 @@ def search_performances(db, keyword):
 
 
 def get_performance_detail(db, performance_id):
+    # status(ACTIVE/HIDDEN/ENDED)로 걸러버리면 예매 종료된 공연은 상세 조회 자체가
+    # 404가 되어 정보도 못 보여준다. 상세는 status 무관하게 항상 내려주고,
+    # "예매 가능 여부"는 응답의 status 필드를 보고 프론트가 버튼을 비활성화한다.
     stmt = (
         select(Performance)
-        .where(Performance.id == performance_id, Performance.status == "ACTIVE")
+        .where(Performance.id == performance_id)
         .options(
             joinedload(Performance.category),
             joinedload(Performance.venue),
