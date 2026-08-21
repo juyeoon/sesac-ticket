@@ -1,0 +1,31 @@
+import { Box, Stack, Typography } from '@mui/material'
+import { seat as seatTokens } from '../../theme/tokens'
+
+const ITEMS = [
+  { label: '선택중', bg: seatTokens.selectedBg, border: seatTokens.selectedBg },
+  { label: '선점중', bg: seatTokens.heldBg, border: seatTokens.heldBorder },
+  { label: '예매 완료', bg: seatTokens.reservedBg, border: seatTokens.reservedBg },
+]
+
+/** 좌석 상태(선택/선점/판매완료) 범례. 등급별 색상·가격은 SeatGradeLegend가 따로 보여준다. */
+export function SeatLegend() {
+  return (
+    <Stack direction="row" spacing={2.5} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+      {ITEMS.map((item) => (
+        <Stack key={item.label} direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+          <Box
+            sx={{
+              width: 16,
+              height: 16,
+              bgcolor: item.bg,
+              border: `1px solid ${item.border}`,
+            }}
+          />
+          <Typography variant="caption" color="text.secondary">
+            {item.label}
+          </Typography>
+        </Stack>
+      ))}
+    </Stack>
+  )
+}
