@@ -32,6 +32,12 @@ export function SystemInfoBadge() {
                     <Button variant="contained" disableRipple sx={infoButtonSx}>
                         X-Forwarded-For: {data.clientIp}
                     </Button>
+                    <Button variant="contained" disableRipple sx={infoButtonSx}>
+                        Web IP: {data.webIp}
+                    </Button>
+                    <Button variant="contained" disableRipple sx={infoButtonSx}>
+                        API IP: {data.apiIp}
+                    </Button>
                 </>
             )}
         </Stack>
