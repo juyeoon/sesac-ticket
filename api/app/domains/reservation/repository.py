@@ -39,6 +39,10 @@
 - mark_hold_expired(db, hold_log) -> None
 - get_expired_holding_holds(db, *, now) -> list[SeatHoldLog]
     hold_sweeper가 사용 — status=HOLDING이면서 expires_at이 지난 것들.
+- list_all_reservations_admin(db) -> list[dict]
+    관리자 대시보드용 전체 예매 목록 (GET /reservations/list). 페이지네이션 없음 —
+    회원용 목록(list_reservations_by_member)과 마찬가지로 전체 반환. N+1로 좌석을
+    조회하지만(get_reservation_seats_detail 재사용) 관리자용 저빈도 조회라 문제 없음.
 
 [의존]
 - app.domains.reservation.model (ScheduleSeat, SeatHoldLog, Reservation, ReservationSeat)
@@ -58,6 +62,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.domains.member.model import Member
 from app.domains.payment.model import BankTransferPayment
 from app.domains.performance.model import Performance, Schedule
 from app.domains.reservation.model import (
@@ -345,3 +350,52 @@ def get_schedule_seats_with_seat_info(db: Session, schedule_id: int) -> list[dic
         }
         for row in rows
     ]
+
+
+def list_all_reservations_admin(db: Session) -> list[dict]:
+    stmt = (
+        select(
+            Reservation,
+            Member.id,
+            Member.nickname,
+            Member.email,
+            Performance.id,
+            Performance.title,
+            Schedule.id,
+            Schedule.perf_date,
+            Schedule.perf_time,
+            BankTransferPayment.depositor_name,
+        )
+        .join(Member, Member.id == Reservation.member_id)
+        .join(Schedule, Schedule.id == Reservation.schedule_id)
+        .join(Performance, Performance.id == Schedule.performance_id)
+        .outerjoin(BankTransferPayment, BankTransferPayment.reservation_id == Reservation.id)
+        .order_by(Reservation.created_at.desc())
+    )
+    rows = db.execute(stmt).all()
+
+    items = []
+    for (
+        reservation,
+        member_id,
+        nickname,
+        email,
+        performance_id,
+        performance_title,
+        schedule_id,
+        perf_date,
+        perf_time,
+        depositor_name,
+    ) in rows:
+        items.append(
+            {
+                "reservation_id": reservation.id,
+                "status": reservation.status,
+                "depositor_name": depositor_name,
+                "member": {"member_id": member_id, "nickname": nickname, "email": email},
+                "performance": {"performance_id": performance_id, "title": performance_title},
+                "schedule": {"schedule_id": schedule_id, "date": perf_date, "time": perf_time},
+                "seats": get_reservation_seats_detail(db, reservation.id),
+            }
+        )
+    return items

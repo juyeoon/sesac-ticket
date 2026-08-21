@@ -13,6 +13,7 @@
 - POST   /reservations/bank-transfer/{reservationId}/confirm     RESV-005 (관리자 전용, writer)
 - GET    /reservations/bank-transfer/{reservationId}             RESV-006 (writer, 본인 확인)
 - GET    /users/me/reservations                                  RESV-007 (writer — 복제 지연 회피)
+- GET    /reservations/list                                      관리자 전용, 전체 예매 목록 (writer, 페이지네이션 없음)
 
 [의존]
 - app.deps.auth (get_current_member, get_current_admin)
@@ -41,6 +42,7 @@ from app.domains.admin.model import Admin
 from app.domains.member.model import Member
 from app.domains.reservation import hold_service, service
 from app.domains.reservation.schema import (
+    AdminReservationListItem,
     ConfirmReservationResponse,
     CreateReservationRequest,
     CreateReservationResponse,
@@ -143,6 +145,14 @@ def get_reservation_detail(
     return service.get_reservation_detail(
         db, reservation_id=reservation_id, member_id=member.id
     )
+
+
+@router.get("/reservations/list", response_model=list[AdminReservationListItem])
+def list_all_reservations(
+    db: Session = Depends(get_db),
+    admin: Admin = Depends(get_current_admin),
+) -> list[AdminReservationListItem]:
+    return service.list_all_reservations_admin(db)
 
 
 @router.get("/users/me/reservations", response_model=MyReservationListResponse)

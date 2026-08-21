@@ -17,6 +17,10 @@
 - ReservationScheduleSummary ({ scheduleId, date, time })
 - ReservationDetailResponse — RESV-006 응답
 - MyReservationItem / MyReservationListResponse ({ content, totalElements }) — RESV-007
+- AdminReservationMember ({ memberId, nickname, email })
+- AdminReservationListItem — GET /reservations/list(관리자 전용) 응답 항목.
+    performance/schedule/seats는 기존 ReservationPerformanceSummary/
+    ReservationScheduleSummary/ReservationSeatItem을 그대로 재사용.
 
 [의존]
 - pydantic
@@ -128,3 +132,19 @@ class MyReservationItem(_CamelModel):
 class MyReservationListResponse(_CamelModel):
     content: list[MyReservationItem]
     total_elements: int
+
+
+class AdminReservationMember(_CamelModel):
+    member_id: int
+    nickname: str
+    email: str
+
+
+class AdminReservationListItem(_CamelModel):
+    reservation_id: int
+    status: str
+    depositor_name: str | None
+    member: AdminReservationMember
+    performance: ReservationPerformanceSummary
+    schedule: ReservationScheduleSummary
+    seats: list[ReservationSeatItem]

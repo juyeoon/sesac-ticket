@@ -19,6 +19,8 @@
 - get_reservation_detail(db, *, reservation_id, member_id) -> ReservationDetailResponse
 - list_my_reservations(db, *, member_id, status=None) -> MyReservationListResponse
     반드시 writer 세션으로 호출 (복제 지연 문제 방지, 분담표 원칙). 페이지네이션 없음.
+- list_all_reservations_admin(db) -> list[AdminReservationListItem]
+    GET /reservations/list(관리자 전용) — 회원 구분 없이 전체 예매 목록. 페이지네이션 없음.
 
 [의존]
 - app.cache.client (get_master_client)
@@ -58,6 +60,8 @@ from app.core.exceptions import AppException, ErrorCode
 from app.domains.reservation import repository
 from app.domains.reservation.model import Reservation
 from app.domains.reservation.schema import (
+    AdminReservationListItem,
+    AdminReservationMember,
     ConfirmReservationResponse,
     CreateReservationResponse,
     MyReservationItem,
@@ -222,3 +226,19 @@ def list_my_reservations(
         content=[MyReservationItem(**item) for item in items],
         total_elements=total,
     )
+
+
+def list_all_reservations_admin(db: Session) -> list[AdminReservationListItem]:
+    items = repository.list_all_reservations_admin(db)
+    return [
+        AdminReservationListItem(
+            reservation_id=item["reservation_id"],
+            status=item["status"],
+            depositor_name=item["depositor_name"],
+            member=AdminReservationMember(**item["member"]),
+            performance=ReservationPerformanceSummary(**item["performance"]),
+            schedule=ReservationScheduleSummary(**item["schedule"]),
+            seats=[ReservationSeatItem(**seat) for seat in item["seats"]],
+        )
+        for item in items
+    ]
