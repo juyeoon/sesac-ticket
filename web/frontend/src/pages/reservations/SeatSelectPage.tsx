@@ -223,7 +223,7 @@ export default function SeatSelectPage() {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 5, pb: 16 }}>
+    <Container maxWidth="lg" sx={{ py: 5, pb: { xs: 26, sm: 20 } }}>
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 4 }}>
         <Box sx={{ width: 64, flexShrink: 0 }}>
           <PlaceholderImage seed={String(context.performanceId)} aspectRatio="1 / 1" />
@@ -261,7 +261,9 @@ export default function SeatSelectPage() {
           position: 'fixed',
           left: 0,
           right: 0,
-          bottom: 0,
+          // RootLayout의 전역 footer도 position:fixed, bottom:0이라 그 위에 겹쳐서 잘려 보이던
+          // 문제 수정 — footer 높이(RootLayout의 main pb와 동일한 56px)만큼 띄운다.
+          bottom: 56,
           borderRadius: 0,
           borderTop: 1,
           borderColor: 'divider',

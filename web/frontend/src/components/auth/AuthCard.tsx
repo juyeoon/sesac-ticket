@@ -1,6 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material'
 import type { ReactNode } from 'react'
-import { PlaceholderImage } from '../common/PlaceholderImage'
 
 interface AuthCardProps {
   title: string
@@ -18,7 +17,12 @@ export function AuthCard({ title, description, children, footer }: AuthCardProps
   return (
     <Box sx={{ minHeight: 'calc(100dvh - 140px)', display: 'flex' }}>
       <Box sx={{ display: { xs: 'none', md: 'block' }, position: 'relative', flex: 1 }}>
-        <PlaceholderImage seed="auth-hero" fill />
+        <Box
+          component="img"
+          src="/login-image.webp"
+          alt=""
+          sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        />
         <Box
           sx={{
             position: 'absolute',

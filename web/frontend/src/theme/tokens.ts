@@ -46,16 +46,18 @@ export const seat = {
   availableBorder: accent.blueSoft,
   selectedBg: neutral.eerieBlack,
   selectedText: neutral.white,
-  heldBg: neutral.gray50,
-  heldBorder: neutral.gray200,
-  heldText: neutral.gray400,
+  // HELD/RESERVED가 둘 다 옅은 회색(gray50/gray100)이라 구분이 안 된다는 피드백 —
+  // 명도 차이를 크게 벌려서(밝은 회색 vs 짙은 회색) 한눈에 구분되게 함.
+  heldBg: neutral.gray200,
+  heldBorder: neutral.gray300,
+  heldText: neutral.gray500,
   // PENDING_PAYMENT: 예매 접수됐지만 관리자 확정 전 — "입금대기중". HELD/RESERVED와
   // 구분되는 색이 필요해서 Vanilla(accent.yellowSoft)를 씀.
   pendingPaymentBg: accent.yellowSoft,
   pendingPaymentBorder: accent.yellowMain,
   pendingPaymentText: accent.yellowMain,
-  reservedBg: neutral.gray100,
-  reservedText: neutral.gray300,
+  reservedBg: neutral.gray500,
+  reservedText: neutral.white,
 } as const
 
 /** 2026-08-20: 그림자에 이어 radius도 "촌스럽다"는 피드백으로 전면 폐지 — 전부 각진 사각형(0)으로 통일. */

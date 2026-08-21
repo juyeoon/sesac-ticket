@@ -23,7 +23,7 @@ interface SeatGridProps {
 
 // 좌석 수가 실제로 많을 수 있어(예: 45열) 셀을 작게 잡아야 가로 스크롤 없이 한 화면에 들어온다.
 const CELL = 18
-const GAP = 2
+const GAP = 4
 const LABEL_W = 18
 
 function seatStyle(status: SeatStatus, isSelected: boolean, gradeColor: GradeColor) {

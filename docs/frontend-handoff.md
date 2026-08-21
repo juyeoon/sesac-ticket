@@ -4,13 +4,18 @@
 
 ## 0. 가장 먼저 할 것
 
-**커밋 안 된 변경사항**:
-- `web/frontend/src/pages/performances/PerformanceListPage.tsx` — **진짜 버그 수정, 커밋해야 함.** 메인 화면 히어로 배너(`HeroBanner`)가 실제 포스터 이미지 대신 계속 그러데이션만 보이던 버그. 원인: 팀원이 `PlaceholderImage`에 실제 이미지(`src`) 연동을 추가하면서 `PerformanceCard`/`PerformanceDetailPage`엔 `src`를 넘기도록 고쳤는데 `HeroBanner`만 빠뜨림. `src={performance.thumbnailUrl}` 추가로 수정.
+**커밋 안 된 변경사항** (히어로 이미지 버그 수정은 이미 커밋됨 — 아래는 그 다음 UI 피드백 5건):
+- `theme/tokens.ts`, `components/reservations/SeatGrid.tsx` — 좌석 HELD/RESERVED 색상 명도 차이 확대, 셀 간격 확대
+- `components/layout/SystemInfoBadge.tsx`, `components/layout/RootLayout.tsx` — 제출 필수조건(서버 버전/IP) 배지를 푸터→헤더로 이동, 눈에 띄는 골드 배지로 재작성
+- `pages/reservations/SeatSelectPage.tsx` — 전역 footer가 fixed로 바뀌면서 겹쳐 잘리던 하단 액션바 위치 수정
+- `components/performances/ShareDialog.tsx` — 공유 모달 복사 버튼에 체크+색상 애니메이션 피드백 추가
+- `index.html`, `components/auth/AuthCard.tsx` — 사용자가 올린 `public/favicon.ico`/`public/login-image.webp` 실제 연동
 - `api/app/domains/reservation/service.py`, `api/app/workers/queue_dispatcher.py` — **로컬 전용 임시 우회 패치, 절대 커밋하지 말 것.** 아래 3번 섹션 참고.
+- `api/uv.lock`이 `uv run`/`uv sync`할 때마다 노이즈로 재정렬됨 — 커밋 전에 매번 `git checkout -- api/uv.lock`으로 되돌릴 것.
 
 ```bash
-git add web/frontend/src/pages/performances/PerformanceListPage.tsx
-git commit -m "fix: wire real thumbnail image into home hero banner"
+git add web/frontend/public/favicon.ico web/frontend/public/login-image.webp web/frontend/index.html web/frontend/src/theme/tokens.ts web/frontend/src/components/reservations/SeatGrid.tsx web/frontend/src/components/layout/SystemInfoBadge.tsx web/frontend/src/components/layout/RootLayout.tsx web/frontend/src/pages/reservations/SeatSelectPage.tsx web/frontend/src/components/performances/ShareDialog.tsx web/frontend/src/components/auth/AuthCard.tsx docs/frontend-worklog.md docs/frontend-handoff.md
+git commit -m "fix: distinguish seat status colors, move system badge to header, fix seat-select action bar clipping, animate share-copy feedback, wire real favicon/login image"
 git push origin feature/integration3
 ```
 
@@ -42,12 +47,11 @@ sesac-ticket/          ← 이 저장소 하나. feature/integration3. git add/c
 
 ## 3. 다음 세션에서 바로 확인할 것 — 로컬 서버 상태
 
-**이번 세션 종료 시점엔 로컬 백엔드가 꺼져 있습니다** (Docker 컨테이너, uvicorn, 워커 전부 미실행 상태로 끝남 — 위 1번 섹션의 clone 정리 작업 때문에 재기동을 다음 세션으로 미룸). 처음부터 새로 띄워야 함:
+**이번 세션 종료 시점엔 로컬 백엔드+프론트가 전부 켜져 있는 상태로 끝남** (Docker 컨테이너, uvicorn, 워커 3개, `npm run dev` 전부 실행 중). 꺼져있으면 아래로 재기동:
 
 ```bash
 docker start sesac-mysql sesac-valkey   # 없으면 README의 "백엔드 로컬 실행" 참고해서 새로 생성
 cd api
-uv sync
 uv run uvicorn app.main:app --port 8000            # 별도 터미널
 uv run python -m app.workers.queue_dispatcher      # 별도 터미널
 uv run python -m app.workers.hold_sweeper          # 별도 터미널
@@ -55,6 +59,10 @@ uv run python -m app.workers.reservation_sweeper   # 별도 터미널
 ```
 
 **경로가 바뀌었음에 주의**: 예전엔 별도 clone이라 `cd api/api`였는데, 이제 `sesac-ticket/api/`가 바로 프로젝트 루트라서 `cd api` 한 번이면 됨.
+
+**⚠️ `.env`의 DB/Valkey 호스트를 항상 로컬용으로 확인할 것**: 이번 세션에 `.env`를 급하게 팀 채팅 값 그대로 다시 만들면서, `VALKEY_MASTER_HOST`/`VALKEY_REPLICA_HOST`가 프로덕션 내부 DNS(`cache.sstk.internal`)로, `DB_WRITER_URL`/`DB_READER_URL`의 호스트가 `db.sstk.internal`로 들어가 있어서 워커가 전부 `getaddrinfo failed`로 죽었던 적 있음. 로컬에서는 반드시 `127.0.0.1`이어야 함(계정은 로컬 MySQL 컨테이너에 `sesac` 앱 유저가 따로 없어서 `root:sesacroot` 사용 중). `COOKIE_SECURE`도 로컬 http 개발 땐 `false`여야 함.
+
+**⚠️ 대기열이 이유 없이 안 움직이면 좀비 프로세스부터 의심할 것**: 세션 중 여러 번 백그라운드로 uvicorn/워커를 띄우다 보면 옛날 프로세스가 안 죽고 쌓여서, 그중 하나가 `worker:lock:queue_dispatcher` 리더 락을 쥔 채 멈춰있을 수 있음(에러 로그도 안 남아서 원인 찾기 어려움). 증상 재현되면 `tasklist | grep python`으로 확인 후 전부 `taskkill //F //PID <pid>`로 정리하고, 필요하면 `docker exec sesac-valkey valkey-cli FLUSHALL`로 캐시까지 비운 뒤 워커를 다시 띄울 것.
 
 **`.env` 위치도 바뀜**: `sesac-ticket/api/.env` (예전 `api/api/.env` 아님). 이번 세션엔 시간이 급해서 **팀 채팅에 공유된 실제 시크릿 값을 그대로 `.env`에 사용함**(사용자 본인 판단, "프로덕션에서는 바꿀 것"이라고 명시함) — 평소 원칙(JWT_SECRET 등은 매번 랜덤 생성)과 다른 예외적 처리이니, **다음 세션에서 로컬 개발에 지장 없으면 랜덤 값으로 되돌리는 걸 권장**. `.env`는 gitignore돼 있어 커밋될 일은 없음.
 

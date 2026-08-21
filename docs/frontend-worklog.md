@@ -226,3 +226,18 @@ ZPOPMIN 우회로 대기열은 뚫렸는데, 그 다음 좌석 선택 화면이 
 
 ### 서버 미기동 상태로 세션 종료
 별도 clone 정리 작업 때문에 이번 세션엔 로컬 백엔드(Docker/uvicorn/워커)를 다시 띄우지 못하고 끝남 — 다음 세션 시작할 때 `frontend-handoff.md` 3번 섹션의 재기동 명령어로 처음부터 새로 띄워야 함(경로가 `api/api` → `api`로 한 단계 얕아진 것 주의).
+
+### UI 세부 피드백 5건 반영 + 로컬 서버 기동 트러블슈팅
+같은 세션에서 이어서 5가지 UI 피드백을 받아 전부 반영함:
+1. **좌석 색상/간격**: `HELD`(gray50)와 `RESERVED`(gray100)가 둘 다 옅은 회색이라 구분 안 됨 — `tokens.ts`에서 `heldBg`를 gray200, `reservedBg`를 gray500(+ 텍스트 흰색)으로 명도 차이를 크게 벌림. `SeatGrid.tsx`의 `GAP`을 2px→4px로 넓힘(45열 기준 가로 스크롤 안 생기는 선에서).
+2. **서버 정보 배지**: 제출 필수조건(Front/Server 버전, 서버 IP)이 푸터에 캡션 텍스트로 묻혀있던 걸 헤더로 옮기고 골드색(`accent.yellowMain`) 배지로 눈에 띄게 만듦(`SystemInfoBadge.tsx` 재작성, `RootLayout.tsx`의 AppBar 안 Toolbar 위에 별도 줄로 배치).
+3. **좌석선택 페이지 하단바 잘림**: `feature/integration3`에서 전역 footer가 `position: fixed`로 바뀐 것과 `SeatSelectPage.tsx` 자체의 고정 액션바가 똑같이 `bottom: 0`이라 겹쳐서 잘려 보였음 — 액션바를 `bottom: 56`(footer 높이만큼)으로 띄우고, footer가 이제 한 줄(배지 이동으로 카피라이트만 남음)이라 `RootLayout.tsx`의 main `pb`도 반응형(`{xs:10,sm:7}`) → 고정값(`7`)으로 단순화.
+4. **공유 모달 UX**: "링크가 복사되었습니다" 텍스트 삭제, 복사 버튼 클릭 시 초록색+체크 아이콘+"복사 완료"로 바뀌었다가 1.8초 후 원상복구되는 애니메이션 추가(`ShareDialog.tsx`, `useState` + `setTimeout`). Playwright 헤드리스 기본 설정은 클립보드 권한이 없어서 처음 캡처했을 때 버튼이 안 바뀌는 것처럼 보였는데, `permissions: ['clipboard-write']` 줘서 재확인하니 정상 동작 확인함 — 테스트 환경 한계였을 뿐 실제 버그 아니었음.
+5. **파비콘/로그인 이미지**: 사용자가 `public/favicon.ico`, `public/login-image.webp`를 직접 올려둠 — `index.html`의 favicon 링크를 기존 `favicon.svg`에서 `favicon.ico`로 교체, `AuthCard.tsx` 왼쪽 패널의 `PlaceholderImage` 그러데이션을 실제 `login-image.webp`로 교체.
+
+**로컬 서버 기동 중 겪은 문제 두 가지** (앞으로도 반복될 수 있어 기록):
+- **`.env`에 프로덕션 내부 호스트가 그대로 들어있었음**: 사용자가 급하게 팀 채팅 값을 그대로 써서 `.env`를 새로 만들었는데, `VALKEY_MASTER_HOST`/`VALKEY_REPLICA_HOST`가 `cache.sstk.internal`, `DB_WRITER_URL`/`DB_READER_URL`의 호스트가 `db.sstk.internal`로 돼 있어서(로컬에서 resolve 안 되는 내부 DNS) 워커가 즉시 `getaddrinfo failed`로 죽음. 로컬 Docker 컨테이너를 가리키도록 두 Valkey 호스트와 DB URL 호스트를 `127.0.0.1`로 고침(계정/비밀번호는 그대로 둠, 다만 로컬 MySQL 컨테이너엔 애초에 `sesac` 앱 계정이 없어서 `root:sesacroot`로도 같이 바꿔야 했음 — 로컬 컨테이너 자체가 `MYSQL_ROOT_PASSWORD`만 세팅돼 있고 별도 앱 유저를 안 만든 상태였음). `COOKIE_SECURE=true`(프로덕션용)도 로컬 http 개발엔 안 맞아서 `false`로 고침.
+- **오래된 좀비 프로세스가 대기열 dispatcher를 막고 있었음**: 세션 내내 여러 번 백그라운드로 띄웠던 uvicorn/워커 프로세스들이 안 죽고 계속 쌓여있었음(`tasklist`로 확인하니 python.exe 11개). 그중 오래된 dispatcher 인스턴스가 leader election 락(`worker:lock:queue_dispatcher`)을 쥔 채로 멈춰있어서, 새로 띄운 dispatcher가 락을 못 얻고 조용히 아무것도 안 하고 있었음(에러 로그도 안 남아서 원인 찾기 오래 걸림). 좀비 프로세스 전부 `taskkill`로 정리하고 Valkey `FLUSHALL`로 깨끗하게 비운 뒤 재기동하니 대기열이 다시 정상적으로 `READY`까지 전환됨. **다음에 로컬 대기열이 이유 없이 안 움직이면, 새 프로세스를 또 띄우기 전에 먼저 기존 python.exe들을 다 정리하고 시작할 것.**
+- 정리 후 curl로 로그인 → 대기열 진입 → `READY` 전환 → 좌석 상태 조회(`GET /schedules/1/seats`)까지 전부 재검증 완료. Playwright로 홈/좌석선택/공유모달/로그인 화면 스크린샷 확인 후 제거.
+
+**참고**: 로그인 화면의 `login-image.webp`에 옅은 워터마크 텍스트가 보임(스톡 이미지 출처 표시로 추정) — 실제 제출/배포 전에 라이선스 확인하거나 다른 이미지로 교체가 필요할 수 있음, 사용자에게 별도로 안내함.

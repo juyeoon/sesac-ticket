@@ -69,6 +69,9 @@ export function RootLayout() {
   return (
     <Box sx={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="sticky">
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
+          <SystemInfoBadge />
+        </Box>
         <Toolbar sx={{ gap: { xs: 1, sm: 3 }, minHeight: 80, '@media (min-width: 600px)': { minHeight: 80 } }}>
           <Typography
             component={RouterLink}
@@ -116,7 +119,7 @@ export function RootLayout() {
         </Toolbar>
       </AppBar>
 
-      <Box component="main" sx={{ flex: 1, pb: { xs: 10, sm: 7 } }}>
+      <Box component="main" sx={{ flex: 1, pb: 7 }}>
         <Outlet />
       </Box>
 
@@ -134,14 +137,10 @@ export function RootLayout() {
           zIndex: (theme) => theme.zIndex.appBar,
         }}
       >
-        <Container
-          maxWidth="lg"
-          sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 0.5, justifyContent: 'space-between' }}
-        >
+        <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'center' }}>
           <Typography variant="caption" color="text.secondary">
             © 2026 새싹티켓 · 새싹 티켓팅 프로그램 프로젝트
           </Typography>
-          <SystemInfoBadge />
         </Container>
       </Box>
     </Box>
