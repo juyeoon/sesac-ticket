@@ -19,7 +19,7 @@ export function AuthCard({ title, description, children, footer }: AuthCardProps
       <Box sx={{ display: { xs: 'none', md: 'block' }, position: 'relative', flex: 1 }}>
         <Box
           component="img"
-          src="/login-image.webp"
+          src="/main_img.png"
           alt=""
           sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
