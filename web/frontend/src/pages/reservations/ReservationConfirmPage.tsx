@@ -47,8 +47,13 @@ export default function ReservationConfirmPage() {
 
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
-      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: 'center' }}>
         <Chip label={STATUS_LABEL[data.status] ?? data.status} color="primary" />
+        {data.confirmedAt && (
+          <Typography variant="body2" color="text.secondary">
+            {new Date(data.confirmedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} 확정
+          </Typography>
+        )}
       </Stack>
       <Typography variant="h3" sx={{ mb: 0.5 }}>
         예매가 접수됐어요

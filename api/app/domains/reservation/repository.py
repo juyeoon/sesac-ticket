@@ -313,6 +313,7 @@ def list_reservations_by_member(
             "performance_title": title,
             "date": perf_date,
             "status": reservation.status,
+            "confirmed_at": reservation.confirmed_at,
         }
         for reservation, title, perf_date in db.execute(stmt).all()
     ]
