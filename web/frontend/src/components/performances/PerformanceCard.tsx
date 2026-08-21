@@ -23,7 +23,7 @@ export function PerformanceCard({ performance }: { performance: PerformanceListI
       }}
     >
       <Box sx={{ p: 1.5, pb: 0 }}>
-        <PlaceholderImage aspectRatio="4 / 3" seed={String(performance.id)} />
+        <PlaceholderImage aspectRatio="4 / 3" seed={String(performance.id)} src={performance.thumbnailUrl} />
       </Box>
       <CardContent>
         <Stack direction="row" spacing={1} sx={{ mb: 1 }}>

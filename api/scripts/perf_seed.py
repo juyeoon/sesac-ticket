@@ -30,6 +30,7 @@ _PERFORMANCES = [
         "age_limit": "12세 이상",
         "ticket_open_days": -7,  # 7일 전 오픈
         "ticket_close_days": 23,  # 23일 후 마감
+        "poster_file": "01_concert.png",
     },
     {
         "title": "새싹 뮤지컬 나이트",
@@ -39,6 +40,7 @@ _PERFORMANCES = [
         "age_limit": "전체 관람가",
         "ticket_open_days": -40,
         "ticket_close_days": -10,  # 10일 전 마감됨
+        "poster_file": "02_musical.png",
     },
     {
         "title": "새싹 재즈 페스티벌",
@@ -48,6 +50,7 @@ _PERFORMANCES = [
         "age_limit": "전체 관람가",
         "ticket_open_days": 10,  # 10일 후 오픈
         "ticket_close_days": 40,
+        "poster_file": "03_jassfestival.png",
     },
     {
         "title": "새싹 발라드 콘서트",
@@ -57,6 +60,7 @@ _PERFORMANCES = [
         "age_limit": "12세 이상",
         "ticket_open_days": -3,
         "ticket_close_days": 27,
+        "poster_file": "04_ballad.png",
     },
     {
         "title": "새싹 클래식 뮤지컬",
@@ -66,8 +70,16 @@ _PERFORMANCES = [
         "age_limit": "전체 관람가",
         "ticket_open_days": -60,
         "ticket_close_days": -20,
+        "poster_file": "05_classic.png",
     },
 ]
+
+# performance_image.file_key에 들어갈 값. STORAGE_BASE_URL이 비어있으면(로컬 개발 기본값)
+# build_image_url()이 이 값을 그대로 반환하므로, "/poster/..." 루트 상대경로로 넣어두면
+# web/frontend/public/poster/에 있는 파일이 프론트 자체 정적 서빙으로 바로 열린다.
+# 나중에 S3로 옮기면: file_key를 파일명만(예: "01_concert.png")으로 바꾸고
+# STORAGE_BASE_URL=https://<bucket>.s3.amazonaws.com/poster 처럼 설정하면 코드 변경 없이 전환된다.
+_POSTER_URL_PREFIX = "/poster"
 
 _SCHEDULES_PER_PERFORMANCE = 3
 
@@ -163,6 +175,18 @@ def seed(engine: Engine) -> None:
                     {"performance_id": performance_id, "grade": grade, "price": price}
                     for grade, price in _GRADE_PRICE.items()
                 ],
+            )
+
+            conn.execute(
+                text(
+                    "INSERT INTO performance_image (performance_id, file_key, sort_order) "
+                    "VALUES (:performance_id, :file_key, :sort_order)"
+                ),
+                {
+                    "performance_id": performance_id,
+                    "file_key": f"{_POSTER_URL_PREFIX}/{performance_def['poster_file']}",
+                    "sort_order": 0,
+                },
             )
 
             for i in range(_SCHEDULES_PER_PERFORMANCE):

@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session
 
 from app.domains.member.model import MemberFavorite
 from app.domains.performance.model import Performance
+from app.domains.performance.service import build_image_url
 
 
 def performance_exists(db: Session, performance_id: int) -> bool:
@@ -72,7 +73,7 @@ def list_favorites(db: Session, member_id: int) -> tuple[list[dict], int]:
 
     items = []
     for _favorite, performance in db.execute(stmt).all():
-        thumbnail_url = performance.images[0].file_key if performance.images else None
+        thumbnail_url = build_image_url(performance.images[0].file_key) if performance.images else None
         items.append(
             {
                 "performance_id": performance.id,

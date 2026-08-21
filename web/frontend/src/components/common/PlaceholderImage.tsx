@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Box } from '@mui/material'
 
 interface PlaceholderImageProps {
@@ -6,6 +7,9 @@ interface PlaceholderImageProps {
   aspectRatio?: string
   /** true면 aspectRatio 대신 부모를 꽉 채움(부모가 position:relative에 height를 갖고 있어야 함) — 히어로 배경용 */
   fill?: boolean
+  /** 실제 이미지 URL(백엔드 thumbnailUrl/imageUrl). 있으면 이걸 그리고, 없거나 로드 실패하면
+   * 그러데이션 자리표시자로 폴백한다. */
+  src?: string | null
 }
 
 // FNV-1a — 문자 하나짜리 시드(예: id "1"~"9")를 넣어도 곱셈 스텝 덕분에 32비트가 골고루 섞여서
@@ -25,7 +29,8 @@ function hashSeed(seed: string): number {
  * 보이면 데모 티가 확 나서 개선함). 글자를 얹었더니 오히려 어색해 보인다는 피드백을 받아
  * 그러데이션만 남김. 채도/명도는 브랜드 파스텔 톤 범위 안으로 고정.
  */
-export function PlaceholderImage({ seed, aspectRatio = '1 / 1', fill = false }: PlaceholderImageProps) {
+export function PlaceholderImage({ seed, aspectRatio = '1 / 1', fill = false, src }: PlaceholderImageProps) {
+  const [loadFailed, setLoadFailed] = useState(false)
   const h = hashSeed(seed)
   const hue1 = h % 360
   const hue2 = (hue1 + 34 + ((h >> 8) % 55)) % 360
@@ -33,12 +38,30 @@ export function PlaceholderImage({ seed, aspectRatio = '1 / 1', fill = false }: 
   const blobX = 20 + (h % 60)
   const blobY = 20 + ((h >> 3) % 60)
 
+  const boxSx = {
+    ...(fill ? { position: 'absolute' as const, inset: 0 } : { aspectRatio, position: 'relative' as const }),
+    overflow: 'hidden',
+    borderRadius: fill ? 0 : 2.5,
+  }
+
+  if (src && !loadFailed) {
+    return (
+      <Box sx={boxSx}>
+        <Box
+          component="img"
+          src={src}
+          alt=""
+          onError={() => setLoadFailed(true)}
+          sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        />
+      </Box>
+    )
+  }
+
   return (
     <Box
       sx={{
-        ...(fill ? { position: 'absolute', inset: 0 } : { aspectRatio, position: 'relative' }),
-        overflow: 'hidden',
-        borderRadius: fill ? 0 : 2.5,
+        ...boxSx,
         background: `linear-gradient(${angle}deg, hsl(${hue1}, 58%, 87%), hsl(${hue2}, 55%, 76%))`,
       }}
     >

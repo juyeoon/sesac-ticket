@@ -86,12 +86,13 @@ export default function PerformanceDetailPage() {
   }
 
   const seed = String(data.id)
+  const posterUrl = data.images[0]?.imageUrl ?? null
 
   return (
     <Box>
       {/* 히어로 배너 — 포스터 아트를 배경으로 깔고 어두운 그러데이션 위에 타이틀을 얹는다 */}
       <Box sx={{ position: 'relative', height: { xs: 280, sm: 360 }, overflow: 'hidden' }}>
-        <PlaceholderImage seed={seed} fill />
+        <PlaceholderImage seed={seed} fill src={posterUrl} />
         <Box
           sx={{
             position: 'absolute',
@@ -135,7 +136,7 @@ export default function PerformanceDetailPage() {
             </Typography>
 
             <Divider sx={{ mb: 3 }} />
-            <PlaceholderImage seed={`${seed}-poster`} aspectRatio="21 / 9" />
+            <PlaceholderImage seed={`${seed}-poster`} aspectRatio="21 / 9" src={posterUrl} />
           </Box>
 
           {/* 예매 요약 카드 — 데스크톱에선 스크롤해도 따라오는 사이드 패널 */}
