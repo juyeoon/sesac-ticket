@@ -23,6 +23,7 @@ export interface AdminReservationSeatItem {
 export interface AdminReservationListItem {
   reservationId: number
   status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'
+  confirmedAt: string | null
   depositorName: string | null
   member: { memberId: number; nickname: string; email: string }
   performance: { performanceId: number; title: string }

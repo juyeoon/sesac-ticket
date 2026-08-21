@@ -45,7 +45,9 @@ export default function AdminHomePage() {
     onSuccess: (result) => {
       queryClient.setQueryData<AdminReservationListItem[]>(RESERVATIONS_QUERY_KEY, (prev) =>
         prev?.map((r) =>
-          r.reservationId === result.reservationId ? { ...r, status: 'CONFIRMED' } : r,
+          r.reservationId === result.reservationId
+            ? { ...r, status: 'CONFIRMED', confirmedAt: result.confirmedAt }
+            : r,
         ),
       )
     },
@@ -155,6 +157,11 @@ export default function AdminHomePage() {
                         color={r.status === 'CONFIRMED' ? 'primary' : undefined}
                         variant={r.status === 'CONFIRMED' ? 'filled' : 'outlined'}
                       />
+                      {r.confirmedAt && (
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(r.confirmedAt).toLocaleString('ko-KR')} 확정
+                        </Typography>
+                      )}
                       {r.status === 'PENDING_PAYMENT' && (
                         <Button
                           size="small"
