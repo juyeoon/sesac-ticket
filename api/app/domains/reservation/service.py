@@ -49,7 +49,7 @@
   RESV_SEAT_ALREADY_RESERVED(409) — Lua 락과 별개로 DB 레벨에서 한 번 더 확인.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -125,7 +125,7 @@ def create_reservation(
         raise AppException(ErrorCode.RESV_SEAT_ALREADY_RESERVED)
 
     settings = get_settings()
-    payment_due_at = datetime.now() + timedelta(
+    payment_due_at = datetime.now(timezone.utc) + timedelta(
         hours=settings.bank_transfer_payment_due_hours
     )
 
@@ -162,7 +162,7 @@ def confirm_reservation(
         raise AppException(ErrorCode.RESV_INVALID_STATUS_TRANSITION)
 
     payment = repository.get_bank_transfer_payment(db, reservation_id)
-    confirmed_at = datetime.now()
+    confirmed_at = datetime.now(timezone.utc)
     reservation.status = "CONFIRMED"
     reservation.confirmed_at = confirmed_at
     if payment is not None:
@@ -234,6 +234,7 @@ def list_all_reservations_admin(db: Session) -> list[AdminReservationListItem]:
         AdminReservationListItem(
             reservation_id=item["reservation_id"],
             status=item["status"],
+            confirmed_at=item["confirmed_at"],
             depositor_name=item["depositor_name"],
             member=AdminReservationMember(**item["member"]),
             performance=ReservationPerformanceSummary(**item["performance"]),

@@ -30,7 +30,7 @@
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.config import get_settings
 from app.db.session import WriterSessionLocal
@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 
 def sweep_expired_reservations(db) -> int:
-    expired = repository.get_expired_pending_reservations(db, now=datetime.now())
+    expired = repository.get_expired_pending_reservations(db, now=datetime.now(timezone.utc))
     for reservation in expired:
         expire_reservation(db, reservation)
     return len(expired)

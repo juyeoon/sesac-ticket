@@ -159,7 +159,10 @@ export default function AdminHomePage() {
                       />
                       {r.confirmedAt && (
                         <Typography variant="caption" color="text.secondary">
-                          {new Date(r.confirmedAt).toLocaleString('ko-KR')} 확정
+                          {new Date(r.confirmedAt).toLocaleString('ko-KR', {
+                            timeZone: 'Asia/Seoul',
+                          })}{' '}
+                          확정
                         </Typography>
                       )}
                       {r.status === 'PENDING_PAYMENT' && (

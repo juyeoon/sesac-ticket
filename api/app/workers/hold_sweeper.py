@@ -25,7 +25,7 @@
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.config import get_settings
 from app.db.session import WriterSessionLocal
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 def sweep_expired_holds(db) -> int:
-    expired_holds = repository.get_expired_holding_holds(db, now=datetime.now())
+    expired_holds = repository.get_expired_holding_holds(db, now=datetime.now(timezone.utc))
     for hold_log in expired_holds:
         expire_hold(db, hold_log)
     return len(expired_holds)

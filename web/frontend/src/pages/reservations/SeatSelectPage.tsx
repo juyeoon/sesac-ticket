@@ -124,18 +124,27 @@ export default function SeatSelectPage() {
 
   const mergedSeats: MergedSeat[] = useMemo(() => {
     if (!venueSeatMap || !scheduleSeats) return []
-    const statusBySeatId = new Map(scheduleSeats.map((s) => [s.seatId, s.status]))
+    // venue_seat.id(물리 좌석)와 schedule_seat.id(회차별 좌석)는 서로 다른 auto-increment
+    // 시퀀스라 값이 다르다. 선점/예매에는 schedule_seat.id를 써야 하므로 두 목록을
+    // section+row+number로 매칭해서 좌표(x,y)는 venueSeatMap, seatId/status는
+    // scheduleSeats 쪽 값을 쓴다.
+    const scheduleSeatByKey = new Map(
+      scheduleSeats.map((s) => [`${s.section}-${s.row}-${s.number}`, s]),
+    )
     return venueSeatMap.sections
       .flatMap((s) => s.seats)
-      .map((seat) => ({
-        seatId: seat.seatId,
-        x: seat.x,
-        y: seat.y,
-        row: seat.row,
-        number: seat.number,
-        grade: seat.grade,
-        status: statusBySeatId.get(seat.seatId) ?? 'AVAILABLE',
-      }))
+      .map((seat) => {
+        const scheduleSeat = scheduleSeatByKey.get(`${seat.section}-${seat.row}-${seat.number}`)
+        return {
+          seatId: scheduleSeat?.seatId ?? seat.seatId,
+          x: seat.x,
+          y: seat.y,
+          row: seat.row,
+          number: seat.number,
+          grade: seat.grade,
+          status: scheduleSeat?.status ?? 'AVAILABLE',
+        }
+      })
   }, [venueSeatMap, scheduleSeats])
 
   const priceByGrade = useMemo(() => {

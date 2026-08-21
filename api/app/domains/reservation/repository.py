@@ -57,7 +57,7 @@
 - 이 리포지토리의 모든 함수는 writer 세션(get_db)으로만 호출한다 (분담표 원칙).
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -132,7 +132,7 @@ def get_seat_hold_log(db: Session, hold_id: str) -> SeatHoldLog | None:
 
 def mark_hold_released(db: Session, hold_log: SeatHoldLog) -> None:
     hold_log.status = "RELEASED"
-    hold_log.released_at = datetime.now()
+    hold_log.released_at = datetime.now(timezone.utc)
     db.commit()
 
 
@@ -143,7 +143,7 @@ def mark_hold_converted(db: Session, hold_log: SeatHoldLog) -> None:
 
 def mark_hold_expired(db: Session, hold_log: SeatHoldLog) -> None:
     hold_log.status = "EXPIRED"
-    hold_log.released_at = datetime.now()
+    hold_log.released_at = datetime.now(timezone.utc)
     db.commit()
 
 
@@ -251,7 +251,7 @@ def get_reservation_seat_ids(db: Session, reservation_id: int) -> list[int]:
 
 def mark_reservation_expired(db: Session, reservation: Reservation) -> None:
     reservation.status = "EXPIRED"
-    reservation.cancelled_at = datetime.now()
+    reservation.cancelled_at = datetime.now(timezone.utc)
     db.commit()
 
 
@@ -391,6 +391,7 @@ def list_all_reservations_admin(db: Session) -> list[dict]:
             {
                 "reservation_id": reservation.id,
                 "status": reservation.status,
+                "confirmed_at": reservation.confirmed_at,
                 "depositor_name": depositor_name,
                 "member": {"member_id": member_id, "nickname": nickname, "email": email},
                 "performance": {"performance_id": performance_id, "title": performance_title},

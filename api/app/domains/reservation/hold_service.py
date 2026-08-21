@@ -44,7 +44,7 @@ import hashlib
 import json
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -115,7 +115,7 @@ def create_hold(
     if result != 1:
         raise AppException(ErrorCode.RESV_SEAT_ALREADY_HELD)
 
-    expires_at = datetime.now() + timedelta(seconds=settings.hold_ttl_sec)
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=settings.hold_ttl_sec)
 
     repository.mark_seats_held(db, seat_ids)
     repository.create_seat_hold_log(

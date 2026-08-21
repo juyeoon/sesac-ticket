@@ -29,10 +29,24 @@
 - app.domains.reservation.service, router
 """
 
-from datetime import date as date_, datetime, time as time_
+from datetime import date as date_, datetime, time as time_, timezone
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, BeforeValidator, ConfigDict
 from pydantic.alias_generators import to_camel
+
+
+def _assume_utc(value: object) -> object:
+    """MySQL DATETIME 컬럼은 tzinfo를 안 보존해서 왕복하면 naive datetime으로 돌아온다.
+    저장 시점에 항상 UTC로 넣도록 통일했으므로(service.py/hold_service.py 등), naive로
+    돌아온 값은 UTC로 간주해 명시적으로 오프셋을 붙인다 — 그래야 응답 JSON에 오프셋이
+    포함되고, 프론트가 서버/브라우저 시간대에 관계없이 정확히 변환할 수 있다."""
+    if isinstance(value, datetime) and value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
+UtcDateTime = Annotated[datetime, BeforeValidator(_assume_utc)]
 
 
 class _CamelModel(BaseModel):
@@ -57,7 +71,7 @@ class HoldRequest(_CamelModel):
 class HoldResponse(_CamelModel):
     hold_id: str
     seat_ids: list[int]
-    expires_at: datetime
+    expires_at: UtcDateTime
 
 
 class ReleaseHoldResponse(_CamelModel):
@@ -68,7 +82,7 @@ class ReleaseHoldResponse(_CamelModel):
 class HoldDetailResponse(_CamelModel):
     hold_id: str
     seat_ids: list[int]
-    expires_at: datetime
+    expires_at: UtcDateTime
     remaining_seconds: int
 
 
@@ -82,13 +96,13 @@ class CreateReservationResponse(_CamelModel):
     status: str
     payment_method: str
     bank_account_info: str
-    payment_due_at: datetime
+    payment_due_at: UtcDateTime
 
 
 class ConfirmReservationResponse(_CamelModel):
     reservation_id: int
     status: str
-    confirmed_at: datetime
+    confirmed_at: UtcDateTime
 
 
 class ReservationSeatItem(_CamelModel):
@@ -118,8 +132,8 @@ class ReservationDetailResponse(_CamelModel):
     status: str
     payment_method: str
     bank_account_info: str
-    payment_due_at: datetime | None
-    confirmed_at: datetime | None
+    payment_due_at: UtcDateTime | None
+    confirmed_at: UtcDateTime | None
 
 
 class MyReservationItem(_CamelModel):
@@ -143,6 +157,7 @@ class AdminReservationMember(_CamelModel):
 class AdminReservationListItem(_CamelModel):
     reservation_id: int
     status: str
+    confirmed_at: UtcDateTime | None
     depositor_name: str | None
     member: AdminReservationMember
     performance: ReservationPerformanceSummary
