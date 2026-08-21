@@ -1,30 +1,54 @@
-import { useState } from 'react'
 import {
-  Alert,
   Box,
   Button,
+  Card,
+  CardContent,
+  Chip,
   CircularProgress,
   Container,
-  Divider,
-  Paper,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { CenteredMessagePage } from '../../components/common/CenteredMessagePage'
 import { useAdminAuth } from '../../admin/AdminAuthContext'
 import { ApiError } from '../../api/client'
-import { adminApi } from './adminApi'
+import { adminApi, type AdminReservationListItem } from './adminApi'
+
+const STATUS_LABEL: Record<string, string> = {
+  PENDING_PAYMENT: '입금 대기중',
+  CONFIRMED: '예매 확정',
+  CANCELLED: '예매 취소',
+  EXPIRED: '기한 만료',
+}
+
+const RESERVATIONS_QUERY_KEY = ['admin-reservations']
 
 export default function AdminHomePage() {
   const { adminId, isAdminAuthenticated, isInitializing, logout } = useAdminAuth()
   const navigate = useNavigate()
-  const [reservationIdInput, setReservationIdInput] = useState('')
+  const queryClient = useQueryClient()
+
+  const {
+    data: reservations,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: RESERVATIONS_QUERY_KEY,
+    queryFn: adminApi.listReservations,
+    enabled: isAdminAuthenticated,
+  })
 
   const confirmMutation = useMutation({
     mutationFn: (reservationId: number) => adminApi.confirmBankTransfer(reservationId),
+    onSuccess: (result) => {
+      queryClient.setQueryData<AdminReservationListItem[]>(RESERVATIONS_QUERY_KEY, (prev) =>
+        prev?.map((r) =>
+          r.reservationId === result.reservationId ? { ...r, status: 'CONFIRMED' } : r,
+        ),
+      )
+    },
   })
 
   if (isInitializing) {
@@ -47,75 +71,115 @@ export default function AdminHomePage() {
     )
   }
 
-  const handleConfirm = () => {
-    const reservationId = Number(reservationIdInput)
-    if (!reservationIdInput || Number.isNaN(reservationId)) return
-    confirmMutation.mutate(reservationId)
-  }
-
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ minHeight: '60vh', py: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <Box sx={{ textAlign: 'center' }}>
+    <Container maxWidth="md" sx={{ py: 5 }}>
+      <Stack
+        direction="row"
+        sx={{ justifyContent: 'space-between', alignItems: 'baseline', mb: 4 }}
+      >
+        <Box>
           <Typography variant="overline" color="text.secondary">
             관리자
           </Typography>
-          <Typography variant="h4">{adminId ? `${adminId}님 환영합니다` : '관리자님 환영합니다'}</Typography>
+          <Typography variant="h4">
+            {adminId ? `${adminId}님 환영합니다` : '관리자님 환영합니다'}
+          </Typography>
         </Box>
+        <Button
+          variant="outlined"
+          onClick={() => {
+            logout()
+            navigate('/admin/login', { replace: true })
+          }}
+        >
+          로그아웃
+        </Button>
+      </Stack>
 
-        <Paper variant="outlined" sx={{ p: 3 }}>
-          <Stack spacing={2}>
-            <Typography variant="h6">무통장입금 예매 확정</Typography>
-            <Typography variant="body2" color="text.secondary">
-              입금 확인 후 예매번호를 입력해 확정하세요. 확정하면 좌석 상태가 &quot;입금대기중&quot;에서
-              &quot;예매 완료&quot;로 바뀝니다.
-            </Typography>
+      <Typography variant="h6" sx={{ mb: 2 }}>
+        전체 예매 목록
+      </Typography>
 
-            <TextField
-              label="예매번호"
-              placeholder="예: 4"
-              value={reservationIdInput}
-              onChange={(e) => setReservationIdInput(e.target.value.replace(/[^0-9]/g, ''))}
-              fullWidth
-            />
+      <Box sx={{ maxWidth: 640 }}>
+        {isLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            <CircularProgress />
+          </Box>
+        )}
 
-            <Button
-              variant="contained"
-              size="large"
-              disabled={!reservationIdInput || confirmMutation.isPending}
-              onClick={handleConfirm}
-            >
-              확정하기
-            </Button>
+        {isError && (
+          <Typography color="error" sx={{ py: 4 }}>
+            예매 목록을 불러오지 못했습니다.
+          </Typography>
+        )}
 
-            {confirmMutation.isSuccess && (
-              <Alert severity="success">
-                예매번호 {confirmMutation.data.reservationId} 확정 완료 ({confirmMutation.data.status})
-              </Alert>
-            )}
-            {confirmMutation.isError && (
-              <Alert severity="error">
-                {confirmMutation.error instanceof ApiError
-                  ? confirmMutation.error.message
-                  : '확정에 실패했습니다.'}
-              </Alert>
-            )}
-          </Stack>
-        </Paper>
+        {!isLoading && !isError && reservations?.length === 0 && (
+          <Typography color="text.secondary" sx={{ py: 4 }}>
+            예매 내역이 없어요.
+          </Typography>
+        )}
 
-        <Divider />
+        <Stack spacing={2}>
+          {reservations?.map((r) => {
+            const isConfirming =
+              confirmMutation.isPending && confirmMutation.variables === r.reservationId
+            const failed = confirmMutation.isError && confirmMutation.variables === r.reservationId
 
-        <Box sx={{ textAlign: 'center' }}>
-          <Button
-            variant="outlined"
-            onClick={() => {
-              logout()
-              navigate('/admin/login', { replace: true })
-            }}
-          >
-            로그아웃
-          </Button>
-        </Box>
+            return (
+              <Card key={r.reservationId}>
+                <CardContent>
+                  <Stack
+                    direction="row"
+                    sx={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}
+                  >
+                    <Stack spacing={0.5}>
+                      <Typography variant="subtitle1">
+                        {r.performance.title} · 예매번호 {r.reservationId}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {r.schedule.date} {r.schedule.time} · {r.member.nickname} ({r.member.email})
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        입금자명: {r.depositorName ?? '-'}
+                      </Typography>
+                      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1, mt: 0.5 }}>
+                        {r.seats.map((s, i) => (
+                          <Chip key={i} size="small" label={`${s.grade} ${s.row}열 ${s.number}번`} />
+                        ))}
+                      </Stack>
+                    </Stack>
+
+                    <Stack spacing={1} sx={{ alignItems: 'flex-end', flexShrink: 0 }}>
+                      <Chip
+                        label={STATUS_LABEL[r.status] ?? r.status}
+                        color={r.status === 'CONFIRMED' ? 'primary' : undefined}
+                        variant={r.status === 'CONFIRMED' ? 'filled' : 'outlined'}
+                      />
+                      {r.status === 'PENDING_PAYMENT' && (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          disabled={isConfirming}
+                          onClick={() => confirmMutation.mutate(r.reservationId)}
+                        >
+                          확인
+                        </Button>
+                      )}
+                    </Stack>
+                  </Stack>
+
+                  {failed && (
+                    <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                      {confirmMutation.error instanceof ApiError
+                        ? confirmMutation.error.message
+                        : '확정에 실패했습니다.'}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            )
+          })}
+        </Stack>
       </Box>
     </Container>
   )
