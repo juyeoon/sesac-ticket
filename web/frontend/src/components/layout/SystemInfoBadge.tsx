@@ -1,33 +1,39 @@
-import { useQuery } from '@tanstack/react-query'
-import { Box, Typography } from '@mui/material'
-import { systemApi } from '../../pages/system/systemApi'
-import { accent, neutral } from '../../theme/tokens'
+import { useQuery } from "@tanstack/react-query";
+import { Button, Stack } from "@mui/material";
+import { systemApi } from "../../pages/system/systemApi";
+import { accent, neutral } from "../../theme/tokens";
 
-/** 제출 필수조건: Front/Server version, 서버 IP·서버명을 화면에 노출. 눈에 잘 띄도록 헤더에 배지 형태로 표시. */
+const infoButtonSx = {
+    bgcolor: neutral.gray100,
+    color: neutral.eerieBlack,
+    cursor: "default",
+    fontWeight: 700,
+    whiteSpace: "nowrap",
+    "&:hover": { bgcolor: accent.yellowMain },
+};
+
+/** 제출 필수조건: Front/Server version, 서버 IP를 화면에 노출. 로그인/회원가입과 같은 버튼 규격으로 보여준다. */
 export function SystemInfoBadge() {
-  const { data } = useQuery({ queryKey: ['system-version'], queryFn: systemApi.version })
+    const { data } = useQuery({
+        queryKey: ["system-version"],
+        queryFn: systemApi.version,
+    });
 
-  return (
-    <Box
-      sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        px: 1.25,
-        py: 0.375,
-        bgcolor: accent.yellowMain,
-        maxWidth: '100%',
-      }}
-    >
-      <Typography variant="caption" sx={{ color: neutral.eerieBlack, fontWeight: 700 }}>
-        Front v{__APP_VERSION__}
-        {data && (
-          <>
-            {' · '}Server v{data.apiVersion}
-            {' · '}X-Forwarded-For: {data.clientIp}
-            {' · '}web-ip: {data.webIp} · api-ip: {data.apiIp}
-          </>
-        )}
-      </Typography>
-    </Box>
-  )
+    return (
+        <Stack direction="row" spacing={1}>
+            <Button variant="contained" disableRipple sx={infoButtonSx}>
+                Front v{__APP_VERSION__}
+            </Button>
+            {data && (
+                <>
+                    <Button variant="contained" disableRipple sx={infoButtonSx}>
+                        Server v{data.apiVersion}
+                    </Button>
+                    <Button variant="contained" disableRipple sx={infoButtonSx}>
+                        X-Forwarded-For: {data.clientIp}
+                    </Button>
+                </>
+            )}
+        </Stack>
+    );
 }

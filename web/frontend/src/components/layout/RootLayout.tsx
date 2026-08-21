@@ -69,9 +69,6 @@ export function RootLayout() {
   return (
     <Box sx={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="sticky">
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-          <SystemInfoBadge />
-        </Box>
         <Toolbar sx={{ gap: { xs: 1, sm: 3 }, minHeight: 80, '@media (min-width: 600px)': { minHeight: 80 } }}>
           <Typography
             component={RouterLink}
@@ -79,7 +76,7 @@ export function RootLayout() {
             variant="h6"
             sx={{ fontWeight: 700, textDecoration: 'none', color: 'text.primary', flexShrink: 0 }}
           >
-            새싹티켓
+            새싹티켓!
           </Typography>
 
           <TextField
@@ -102,7 +99,11 @@ export function RootLayout() {
             }}
           />
 
-          <Box sx={{ flexGrow: 1 }} />
+          <Box sx={{ flex: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
+            <SystemInfoBadge />
+          </Box>
+
+          <Box sx={{ flexGrow: 1, display: { xs: 'block', md: 'none' } }} />
 
           {isAuthenticated ? (
             <UserMenu />
@@ -119,24 +120,11 @@ export function RootLayout() {
         </Toolbar>
       </AppBar>
 
-      <Box component="main" sx={{ flex: 1, pb: 7 }}>
+      <Box component="main" sx={{ flex: 1 }}>
         <Outlet />
       </Box>
 
-      <Box
-        component="footer"
-        sx={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          width: '100%',
-          borderTop: 1,
-          borderColor: 'divider',
-          py: 1.5,
-          bgcolor: 'background.paper',
-          zIndex: (theme) => theme.zIndex.appBar,
-        }}
-      >
+      <Box component="footer" sx={{ borderTop: 1, borderColor: 'divider', py: 1.5, bgcolor: 'background.paper' }}>
         <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'center' }}>
           <Typography variant="caption" color="text.secondary">
             © 2026 새싹티켓 · 새싹 티켓팅 프로그램 프로젝트
