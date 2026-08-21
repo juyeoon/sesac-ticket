@@ -7,7 +7,7 @@
 [구현할 것]
 - GET /health/live -> { status: "UP" }
 - GET /health/ready -> DB·Valkey 중 하나만 죽어도 503, { status, checks: { db, valkey } }
-- GET /version?platform= -> VersionResponse (server/clientIp 포함)
+- GET /version?platform= -> VersionResponse (clientIp/webIp/apiIp 포함)
 
 [의존]
 - app.domains.system.service
@@ -17,21 +17,20 @@
 
 [주의]
 - clientIp는 X-Forwarded-For 헤더값 + 마지막으로 직접 접속한 순수 IP를 합친 전체
-  체인이다. X-Forwarded-For는 각 hop이 "나한테 연결한 놈이 누구였는지"만 계속
-  append하는 방식이라, 이 API에 마지막으로 직접 TCP 연결한 놈(=alb-int) 자신의
-  IP는 헤더에 안 남는다. request.client.host는 못 쓴다 — TRUSTED_PROXY_HOSTS가
+  체인(로컬PC~alb-int)이다. request.client.host는 못 쓴다 — TRUSTED_PROXY_HOSTS가
   체인의 모든 hop을 신뢰하도록 넓게 잡혀 있으면 ProxyHeadersMiddleware가 이 값을
   "원래 클라이언트"까지 거슬러 올라간 값으로 덮어써버려서(원래 클라이언트 IP가
   중복으로 찍히는 버그가 났었음), 대신 main.py의 _CaptureDirectPeerMiddleware가
   덮어쓰기 전에 미리 보존해둔 request.state.direct_peer_ip를 쓴다.
-- 헤더가 없으면(프록시 없이 직접 접속) direct_peer_ip 하나만 남는다.
-- 체인 맨 끝에 이 API 인스턴스 자신의 실제 IP도 이어붙인다. request.scope["server"]는
-  이 커넥션을 받은 로컬 소켓의 (host, port)라, --host 0.0.0.0으로 띄워도 실제로
-  접속을 받은 인터페이스의 진짜 IP가 그대로 들어온다 (INSTANCE_ID처럼 .env로
-  사람이 정해둔 라벨이 아니라, OS 소켓에서 직접 얻은 실측값). X-Forwarded-For는
-  원래 "나에게 도달하기 전" 경로만 남기고 자기 자신은 안 남기는 게 표준이지만,
-  여기선 화면에 전체 경로(로컬 PC~API 인스턴스)를 한 줄로 다 보여주는 게
-  목적이라 의도적으로 예외를 둔다.
+- webIp는 X-Forwarded-For 헤더의 마지막 항목이다. nginx(web)가 /api/*를
+  alb-int로 프록시할 때 자기 자신의 IP를 그 헤더 맨 끝에 append하므로
+  (proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for), 그게 곧
+  web 인스턴스의 IP다.
+- apiIp는 request.scope["server"](이 커넥션을 받은 로컬 소켓의 (host, port))다.
+  --host 0.0.0.0으로 띄워도 실제로 접속을 받은 인터페이스의 진짜 IP가 그대로
+  들어온다. 예전 INSTANCE_ID/INSTANCE_AZ처럼 .env에 사람이 정해서 넣는 라벨이
+  아니라 OS 소켓에서 매 요청마다 직접 얻는 실측값이라, 오토스케일링으로
+  인스턴스가 늘거나 바뀌어도 별도 설정 없이 항상 맞다.
 """
 
 from fastapi import APIRouter, HTTPException, Request
@@ -68,12 +67,10 @@ def get_version(request: Request, platform: str | None = None) -> VersionRespons
     else:
         client_ip = forwarded_for or direct_peer
 
-    server_addr = request.scope.get("server")
-    instance_ip = server_addr[0] if server_addr else None
+    web_ip = forwarded_for.split(",")[-1].strip() if forwarded_for else None
 
-    info = system_service.get_version_info(platform, client_ip)
-    if client_ip and instance_ip:
-        info["client_ip"] = f"{client_ip}, {instance_ip}"
-    else:
-        info["client_ip"] = client_ip or instance_ip
+    server_addr = request.scope.get("server")
+    api_ip = server_addr[0] if server_addr else None
+
+    info = system_service.get_version_info(platform, client_ip, web_ip, api_ip)
     return VersionResponse(**info)

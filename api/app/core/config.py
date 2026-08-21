@@ -87,10 +87,6 @@ class Settings(BaseSettings):
     app_force_update: bool = False
     app_update_url: str = ""
 
-    # --- 인스턴스 ---
-    instance_id: str = "api-local"
-    instance_az: str = "unknown"  # 배포 시 실제 가용영역으로 주입 (예: ap-northeast-2a)
-
 
 @lru_cache
 def get_settings() -> Settings:

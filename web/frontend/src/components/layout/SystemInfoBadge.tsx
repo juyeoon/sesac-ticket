@@ -11,8 +11,9 @@ export function SystemInfoBadge() {
       Front v{__APP_VERSION__}
       {data && (
         <>
-          {' · '}Server v{data.apiVersion} ({data.server.instanceId} · {data.server.az})
+          {' · '}Server v{data.apiVersion}
           {' · '}X-Forwarded-For: {data.clientIp}
+          {' · '}web-ip: {data.webIp} · api-ip: {data.apiIp}
         </>
       )}
     </Typography>

@@ -5,10 +5,12 @@
 
 [구현할 것]
 - AppVersionInfo ({ latestVersion, minRequiredVersion, forceUpdate, updateUrl })
-- ServerInfo ({ instanceId, az })
-- VersionResponse ({ apiVersion, app, server, clientIp })
-    server/clientIp는 프론트 화면(footer)에 서버 식별 정보를 노출하기 위해
-    .mypc/프론트Q.md "추가로 여쭤볼 것"에서 요청받아 추가함.
+- VersionResponse ({ apiVersion, app, clientIp, webIp, apiIp })
+    clientIp/webIp/apiIp는 프론트 화면(footer)에 요청 경로를 노출하기 위해
+    .mypc/프론트Q.md "추가로 여쭤볼 것"에서 요청받아 추가함. webIp/apiIp는
+    .env로 사람이 정해두는 값(예전 instanceId/az)이 아니라 X-Forwarded-For
+    체인/소켓에서 그 요청 시점에 실측한 값이라 오토스케일링으로 인스턴스가
+    늘어나거나 바뀌어도 별도 설정 없이 항상 맞다.
 
 [의존]
 - pydantic
@@ -32,13 +34,9 @@ class AppVersionInfo(_CamelModel):
     update_url: str
 
 
-class ServerInfo(_CamelModel):
-    instance_id: str
-    az: str
-
-
 class VersionResponse(_CamelModel):
     api_version: str
     app: AppVersionInfo
-    server: ServerInfo
     client_ip: str | None
+    web_ip: str | None
+    api_ip: str | None
