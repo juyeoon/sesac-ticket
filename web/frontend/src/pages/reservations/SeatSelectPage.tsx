@@ -152,6 +152,13 @@ export default function SeatSelectPage() {
   const holdMutation = useMutation({
     mutationFn: () => seatApi.createHold(scheduleId, selectedSeatIds, (context as QueueContext).ticket),
     onSuccess: (res) => setHoldId(res.holdId),
+    onError: () => {
+      // 선점 실패(이미 선점/예매된 좌석 포함) 시 선택 상태를 비우고 좌석 현황을 다시
+      // 받아와야, 화면에 남아있는 stale AVAILABLE 표시 때문에 다른 좌석을 골라도
+      // "최대 선택 개수 초과"에 막혀 아무 반응이 없어 보이는 문제를 막을 수 있다.
+      setSelectedSeatIds([])
+      queryClient.invalidateQueries({ queryKey: ['schedule-seats', scheduleId] })
+    },
   })
 
   const releaseMutation = useMutation({
